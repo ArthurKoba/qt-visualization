@@ -3,12 +3,11 @@
 
 #include <QApplication>
 #include <QMainWindow>
+#include <QSplitter>
+
 #include <QLineSeries>
 #include <QChartView>
-#include <QSplitter>
 #include <QBarSeries>
-#include <QList>
-
 
 #include "BDSP.h"
 #include "serial.h"
@@ -26,12 +25,17 @@ public:
     QBarSet *amplitudesSet = nullptr;
     QChartView *amplitudesChartView = nullptr;
 
+    int16_t samples[256]{};
+    uint8_t amplitudes[128]{};
+
     Serial serial;
-    void packet_execute(Packet &packet) const;
+    void packet_execute(Packet &packet);
     void configure_charts();
+    void refreshGuiData();
 
 
 private:
+    QTimer *timer;
     QSplitter *splitter;
     QMainWindow window;
     BDSPReceiver receiver;

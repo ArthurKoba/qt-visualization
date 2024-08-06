@@ -4,6 +4,7 @@
 #include <QValueAxis>
 #include <QBarSeries>
 #include <QBarSet>
+#include <QTimer>
 
 
 uint64_t get_time() {
@@ -11,27 +12,36 @@ uint64_t get_time() {
     return duration_cast<milliseconds>(system_clock::now().time_since_epoch()).count();;
 }
 
-void QApplicationCustom::packet_execute(Packet &packet) const {
 
-    if (packet.id == 1) return;
+void QApplicationCustom::packet_execute(Packet &packet) {
 
-    static uint64_t last_update = 0;
-    if (get_time() - last_update < 1000/60) return;
-    last_update = get_time();
+//    if (packet.id == 1) return;
+
+//    static uint64_t last_update = 0;
+//    if (get_time() - last_update < 1000/60) return;
+//    last_update = get_time();
 
     if (packet.id == 1 and packet.size / 2 == 256) {
-        auto *samples = reinterpret_cast<int16_t*>(packet.data_ptr);
-        int samples_size = packet.size / 2;
-        for (int i = 0; i < samples_size; i++) {
-            samplesSeries->replace(i, i, samples[i]);
-        }
+        const auto *new_samples = reinterpret_cast<int16_t*>(packet.data_ptr);
+        const int samples_size = packet.size / 2;
+        for (int i = 0; i < samples_size; i++) samples[i] = new_samples[i];
     }
 
     if (packet.id == 2 and packet.size == 128) {
-        for (int i = 0; i < 256; ++i) {
-            amplitudesSet->replace(i, packet.data_ptr[i]);
-        }
+        for (int i = 0; i < 128; ++i) amplitudes[i] = packet.data_ptr[i];
+//
     }
+}
+
+void QApplicationCustom::refreshGuiData() {
+
+    for (int i = 0; i < 128; ++i) {
+        int j = i * 2 + 1;
+        samplesSeries->replace(i, i, samples[i]);
+        samplesSeries->replace(j, j, samples[j]);
+        amplitudesSet->replace(i, amplitudes[i]);
+    }
+
 }
 
 
@@ -61,10 +71,12 @@ QApplicationCustom::QApplicationCustom(int &argc, char **argv, int flags) : QApp
     splitter->addWidget(amplitudesChartView);
 
 
-    QTimer *t = new QTimer(this);
-    t->setInterval(1000);
-    connect(t, SIGNAL(timeout()), this, SLOT(refreshGuiData()));
-    t->start();
+    timer = new QTimer(this);
+    connect(timer, &QTimer::timeout, this, [=]() {
+        this->refreshGuiData();
+    });
+
+    timer->start(1000/60);
 
     window.setCentralWidget(splitter);
     window.resize(800, 400);
@@ -118,5 +130,3 @@ void QApplicationCustom::configure_charts() {
 
     for (int i = 0; i < 128; ++i) *amplitudesSet << 0;
 }
-
-
