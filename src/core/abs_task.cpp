@@ -1,10 +1,4 @@
-//
-// Created by Koba on 26.05.2025.
-//
-
 #include "abs_task.h"
-
-#include <iostream>
 
 void AbstractTask::start() {
     if (_thread_handle) return;
@@ -29,13 +23,16 @@ void AbstractTask::start() {
 
 void AbstractTask::stop() {
     if (_thread_handle) {
-        std::cout << "Close task" << std::endl;
         TerminateThread(_thread_handle, 0);
-        _after_close_task();
         _thread_handle = nullptr;
+        _after_close_task();
     }
 }
 
 uint64_t AbstractTask::_before_run_task() {
     return 0;
+}
+
+void AbstractTask::_sleep(float ms) {
+    Sleep(DWORD(ms));
 }
