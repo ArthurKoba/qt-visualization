@@ -6,7 +6,7 @@
 
 ABSView::ABSView() {
     timer = new QTimer(this);
-    auto test = [=]() {
+    auto test = [this]() {
         this->refreshGuiData();
     };
     connect(timer, &QTimer::timeout, this, test);

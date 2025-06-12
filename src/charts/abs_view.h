@@ -3,8 +3,9 @@
 
 #include <QChartView>
 #include <QTimer>
-#include <BDSP.h>
+//#include <BDSP.h>
 
+#include "../packet.h"
 
 class ABSView : public QChartView {
 public:

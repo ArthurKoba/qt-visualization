@@ -1,34 +1,41 @@
 #include "app.h"
-#include <cinttypes>
 
+#include "audio/loopback/factory.h"
 
 Application::Application(int &argc, char **argv, int flags) : QApplication(argc, argv, flags) {
 
-    COBS::config_t config = {.delimiter = '\n', .depth = 255};
+    loopback = audio::loopback::LoopbackFactory::get_loopback();
 
-    receiver.set_config(config, [] (Packet &packet, void *ctx) {
-        auto &t = *reinterpret_cast<Application*>(ctx);
-        if (t.samplesChartView) t.samplesChartView->execPacket(packet);
-        if (t.amplitudesChartView) t.amplitudesChartView->execPacket(packet);
-    }, this);
+    samplesChartView1 = new SamplesChartView;
+    samplesChartView2 = new SamplesChartView;
+//    amplitudesChartView = new AmplitudesChartView;
 
-    serial.set_data_handler([] (uint8_t *data_p, size_t size, void *ctx) {
-        auto &receiver_ = *reinterpret_cast<BDSPReceiver*>(ctx);
-        receiver_.parse(data_p, size);
-    }, &receiver);
+    loopback->set_audio_handler([this] (audio::loopback::loopback_audio data) {
+        Packet packet1;
+        packet1.id = 10;
+        packet1.size = data.samples;
+        packet1.data_ptr = data.data;
+        Packet packet2 = packet1;
+        packet2.data_ptr = data.data + data.samples;
+        samplesChartView1->execPacket(packet1);
+        samplesChartView2->execPacket(packet2);
+    });
 
-    samplesChartView = new SamplesChartView;
-    amplitudesChartView = new AmplitudesChartView;
 
     splitter = new QSplitter;
     splitter->setOrientation(Qt::Vertical);
 
-    splitter->addWidget(samplesChartView);
-    splitter->addWidget(amplitudesChartView);
+    splitter->addWidget(samplesChartView1);
+    splitter->addWidget(samplesChartView2);
 
     window.setCentralWidget(splitter);
     window.resize(800, 400);
 //    window.grabGesture(Qt::PanGesture);
 //    window.grabGesture(Qt::PinchGesture);
+
+    loopback->start();
     window.show();
+}
+
+Application::~Application() {
 }

@@ -8,7 +8,7 @@
 #include <QValueAxis>
 
 #include "abs_view.h"
-#include "BDSP.h"
+//#include "BDSP.h"
 
 
 class SamplesChart : public QChart {
@@ -16,7 +16,9 @@ public:
     QLineSeries *series = nullptr;
 
     SamplesChart();
+
     void changeDataSize(size_t newSize);
+
 private:
     QValueAxis *axisX{};
     QValueAxis *axisY{};
@@ -26,13 +28,18 @@ private:
 class SamplesChartView : public ABSView {
 public:
     SamplesChartView();
+
     void execPacket(Packet &packet) override;
+
     SamplesChart *chart() const;
+
 private:
     size_t dataSize = 0;
-    int *data = nullptr;
+    double *data = nullptr;
+
     ~SamplesChartView() override;
     void refreshGuiData() const override;
+    void updateDataSize(size_t size);
 };
 
 #endif //QT_VISUALIZATION_SAMPLES_H

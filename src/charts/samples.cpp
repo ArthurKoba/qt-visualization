@@ -9,7 +9,8 @@ SamplesChart::SamplesChart() {
     axisX = new QValueAxis;
     axisY = new QValueAxis;
 
-    axisY->setRange(-600, 600);
+    int range = 1;
+    axisY->setRange(-range, range);
 
     series = new QLineSeries;
     series->setUseOpenGL(true);
@@ -28,16 +29,20 @@ void SamplesChart::changeDataSize(size_t newSize) {
 }
 
 
-
+void SamplesChartView::updateDataSize(size_t size) {
+    if (size == dataSize) return;
+    dataSize = size;
+    delete [] data;
+    data = new double[dataSize];
+    chart()->changeDataSize(dataSize);
+}
 
 SamplesChartView::SamplesChartView() {
     timer->start(1000/60);
     setChart(new SamplesChart);
     timer->start(1000/60);
-    dataSize = 256;
-    data = new int[dataSize];
+    updateDataSize(100);
     for (int i = 0; i < dataSize; ++i) data[i] = i;
-    chart()->changeDataSize(dataSize);
 }
 
 SamplesChartView::~SamplesChartView() {
@@ -45,19 +50,21 @@ SamplesChartView::~SamplesChartView() {
 }
 
 void SamplesChartView::execPacket(Packet &packet) {
-    if (packet.id not_eq 1) return;
+    updateDataSize(packet.size);
 
-    size_t numberOfSamplesFromPacket = packet.size / 2;
+    size_t numberOfSamplesFromPacket = packet.size;
 
-    if (numberOfSamplesFromPacket != dataSize) {
-        delete [] data;
-        data = new int[numberOfSamplesFromPacket];
-        dataSize = numberOfSamplesFromPacket;
-        chart()->changeDataSize(numberOfSamplesFromPacket);
+    for (int i = 0; i < dataSize; ++i) {
+        data[i] = packet.data_ptr[i];
     }
 
-    const auto *newSamples = reinterpret_cast<int16_t*>(packet.data_ptr);
-    for (int i = 0; i < dataSize; i++) data[i] = newSamples[i];
+//    if (packet.id == 1) {
+//        const auto *newSamples = reinterpret_cast<int16_t*>(packet.data_ptr);
+//        for (int i = 0; i < dataSize; i++) data[i] = newSamples[i];
+//    } else if (packet.id == 10) {
+//        for (int i = 0; i < dataSize; i++) data[i] = i;
+//    }
+
 }
 
 void SamplesChartView::refreshGuiData() const {
@@ -69,5 +76,5 @@ void SamplesChartView::refreshGuiData() const {
 
 
 SamplesChart *SamplesChartView::chart() const {
-    return dynamic_cast<SamplesChart*>(QChartView::chart());
+    return reinterpret_cast<SamplesChart*>(QChartView::chart());
 }
