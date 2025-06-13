@@ -3,9 +3,9 @@
 
 #include <vector>
 #include <functional>
-#include "fft.h"
-#include "../core/abs_task.h"
 
+#include "core/abs_task.h"
+#include "fft.h"
 
 class ValuesContainer {
 public:
