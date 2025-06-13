@@ -1,15 +1,25 @@
-project(${PROJECT_NAME} LANGUAGES CXX)
+if (BUILD_SHARED_LIBS)
+    add_library(charts SHARED)
+else ()
+    add_library(charts)
+endif ()
 
-add_library(charts SHARED)
-
-target_link_libraries(charts PRIVATE
+target_link_libraries(charts
         Qt::Charts
 )
 
-target_sources(charts PUBLIC
-        abs_view.h abs_view.cpp
-        amplitudes.h amplitudes.cpp
-        samples.h samples.cpp
+set(public_headers
+        include/charts/fps.h
+        include/charts/mixins.h
 )
 
-set(CMAKE_BUILD_RPATH "${CMAKE_BINARY_DIR}/charts")
+set(sources
+        ${public_headers}
+        fps.cpp
+        mixins.cpp
+)
+
+target_sources(charts PRIVATE ${sources})
+
+target_include_directories(charts PUBLIC include)
+target_include_directories(charts PRIVATE include/charts)
