@@ -62,7 +62,11 @@ uint64_t WASAPILoopback::_task() {
     uint32_t frames;
     DWORD flags;
 
-    while (true) {
+    while (_thread_handle) {
+        if (need_stop) {
+            need_stop = false;
+            return 0;
+        }
         hr = pCaptureClient->GetNextPacketSize(&packet_size);
         if (FAILED(hr)) {
             return _show_error_and_return("IAudioCaptureClient::GetNextPacketSize failed: hr = 0x%08lx\n", hr);
@@ -87,6 +91,7 @@ uint64_t WASAPILoopback::_task() {
             }
         }
     }
+    return 1;
 }
 
 
@@ -167,16 +172,19 @@ HRESULT WASAPILoopback::_show_error_and_return(std::string msg, HRESULT result) 
 }
 
 void WASAPILoopback::_reset() {
+    printf("try release pCaptureClient\n");
     if (pCaptureClient) {
+        pCaptureClient->ReleaseBuffer(0);
+        printf("buffer released\n");
         pCaptureClient->Release();
         pCaptureClient = nullptr;
     }
-
+    printf("try release pwfx\n");
     if (pwfx) {
         CoTaskMemFree(pwfx);
         pwfx = nullptr;
     }
-
+    printf("try release pAudioClient\n");
     if (pAudioClient) {
         pAudioClient->Release();
         pAudioClient = nullptr;
@@ -203,9 +211,10 @@ void WASAPILoopback::set_audio_handler(audio_handler_t handler) {
 }
 
 void WASAPILoopback::start() {
+    need_stop = false;
     AbstractTask::start();
 }
 
 void WASAPILoopback::stop() {
-    AbstractTask::stop();
+    need_stop = true;
 }

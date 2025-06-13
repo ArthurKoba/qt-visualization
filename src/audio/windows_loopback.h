@@ -5,13 +5,15 @@
 #include <mmdeviceapi.h>
 #include <string>
 
-#include "./types.h"
-#include "../../core/abs_task.h"
+#include "core/abs_task.h"
+#include "loopback/types.h"
 
 namespace audio::loopback {
 
 class WASAPILoopback final : public virtual IAudioLoopback, public AbstractTask {
     private:
+        bool need_stop = false;
+
         IAudioClient *pAudioClient = nullptr;
         IAudioCaptureClient *pCaptureClient = nullptr;
         IMMDevice *pDevice = nullptr;
@@ -21,7 +23,6 @@ class WASAPILoopback final : public virtual IAudioLoopback, public AbstractTask 
         audio_handler_t _handler = nullptr;
 
         HRESULT _show_error_and_return(std::string msg, HRESULT result);
-
     protected:
         uint64_t _before_run_task() override;
 
