@@ -1,4 +1,8 @@
-add_library(audio)
+if (BUILD_SHARED_LIBS)
+    add_library(audio SHARED)
+else ()
+    add_library(audio)
+endif ()
 
 set(public_headers
         include/loopback/types.h

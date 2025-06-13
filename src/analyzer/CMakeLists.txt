@@ -1,4 +1,8 @@
-add_library(analyzer)
+if (BUILD_SHARED_LIBS)
+    add_library(analyzer SHARED)
+else ()
+    add_library(analyzer)
+endif ()
 
 add_subdirectory(dsp)
 add_subdirectory(generator)
