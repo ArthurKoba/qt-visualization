@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <functional>
+#include <QElapsedTimer>
 
 #include "core/abs_task.h"
 #include "fft.h"
@@ -32,6 +33,7 @@ class Analyzer final : public AbstractTask {
 public:
     typedef std::function<void(void)> update_handler_t;
 protected:
+    QElapsedTimer timer;
     FFT fft;
     FFT fft2;
     update_handler_t _handler = nullptr;

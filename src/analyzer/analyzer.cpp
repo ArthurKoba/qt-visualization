@@ -40,16 +40,22 @@ uint64_t Analyzer::_task() {
             continue;
         }
         _need_update = false;
+        timer.start();
         auto status = fft.run(samples.left, amplitudes.left);
+        auto fft1Time = float(timer.nsecsElapsed() / 1000);
         if (status not_eq FFT::SUCCESS) {
             qCritical(std::format("Failed run fft. code: {}", int(status)).c_str());
             break;
         }
+        timer.start();
         status = fft2.run(samples.left, amplitudes.right);
+        auto fft2Time = float(timer.nsecsElapsed() / 1000);
         if (status not_eq FFT::SUCCESS) {
             qCritical(std::format("Failed run fft2. code: {}", int(status)).c_str());
             break;
         }
+//        qDebug("fft1: %.2f, fft2: %.2f", fft1Time, fft2Time);
+
         if (_handler) {
             _handler();
         }
