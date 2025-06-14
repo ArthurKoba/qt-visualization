@@ -18,7 +18,6 @@
 #include "dsp_err.h"
 #include "sdkconfig.h"
 #include "dsps_fft_tables.h"
-#include "dsps_fft2r_platform.h"
 
 #ifndef CONFIG_DSP_MAX_FFT_SIZE
 #define CONFIG_DSP_MAX_FFT_SIZE 4096
@@ -92,27 +91,6 @@ void dsps_fft2r_deinit_sc16(void);
  *      - One of the error codes from DSP library
  */
 esp_err_t dsps_fft2r_fc32_ansi_(float *data, int N, float *w);
-esp_err_t dsps_fft2r_fc32_ae32_(float *data, int N, float *w);
-esp_err_t dsps_fft2r_fc32_aes3_(float *data, int N, float *w);
-esp_err_t dsps_fft2r_fc32_arp4_(float *data, int N, float *w);
-
-esp_err_t dsps_fft2r_sc16_ansi_(int16_t *data, int N, int16_t *w);
-esp_err_t dsps_fft2r_sc16_ae32_(int16_t *data, int N, int16_t *w);
-esp_err_t dsps_fft2r_sc16_aes3_(int16_t *data, int N, int16_t *w);
-esp_err_t dsps_fft2r_sc16_arp4_(int16_t *data, int N, int16_t *w);
-
-/**@}*/
-// This is workaround because linker generates permanent error when assembler uses
-// direct access to the table pointer
-#define dsps_fft2r_fc32_ae32(data, N) dsps_fft2r_fc32_ae32_(data, N, dsps_fft_w_table_fc32)
-#define dsps_fft2r_fc32_aes3(data, N) dsps_fft2r_fc32_aes3_(data, N, dsps_fft_w_table_fc32)
-#define dsps_fft2r_fc32_arp4(data, N) dsps_fft2r_fc32_arp4_(data, N, dsps_fft_w_table_fc32)
-
-#define dsps_fft2r_sc16_ae32(data, N) dsps_fft2r_sc16_ae32_(data, N, dsps_fft_w_table_sc16)
-#define dsps_fft2r_sc16_aes3(data, N) dsps_fft2r_sc16_aes3_(data, N, dsps_fft_w_table_sc16)
-#define dsps_fft2r_sc16_arp4(data, N) dsps_fft2r_sc16_arp4_(data, N, dsps_fft_w_table_sc16)
-#define dsps_fft2r_fc32_ansi(data, N) dsps_fft2r_fc32_ansi_(data, N, dsps_fft_w_table_fc32)
-#define dsps_fft2r_sc16_ansi(data, N) dsps_fft2r_sc16_ansi_(data, N, dsps_fft_w_table_sc16)
 
 /**@{*/
 /**

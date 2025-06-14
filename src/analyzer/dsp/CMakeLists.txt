@@ -1,9 +1,5 @@
-
 add_library(dsp)
 
-include_directories(common/include)
-include_directories(common/include_sim)
-include_directories(fft/include)
 target_include_directories(dsp PUBLIC common/include)
 target_include_directories(dsp PUBLIC common/include_sim)
 target_include_directories(dsp PUBLIC fft/include)
