@@ -13,12 +13,13 @@
 
 
 class FPSChartView final : public QChartView, public FPSMixin {
-
-
     QTimer _dataUpdateTimer;
     QLabel *fpsLabel;
     std::vector<float> _data;
     bool need_update = false;
+    bool auto_resizing = false;
+    float lastMin;
+    float lastMax;
 
     void _setFPS(qreal fps);
 
@@ -29,11 +30,11 @@ public:
 
     explicit FPSChartView();
 
+    void setAutoResizing(bool value);
+
     void updateChartData();
 
     void update(std::vector<float> &data);
-
-
 };
 
 #endif //QT_VISUALIZATION_FPS_H

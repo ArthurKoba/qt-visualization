@@ -23,6 +23,9 @@ FPSChartView::FPSChartView(): FPSMixin(this) {
     series->attachAxis(&axisX);
     series->attachAxis(&axisY);
 
+    lastMax = -std::numeric_limits<float>::infinity();
+    lastMin = std::numeric_limits<float>::infinity();
+
     axisY.setRange(-1, 1);
 
     fpsLabel = new QLabel(this);
@@ -69,7 +72,24 @@ void FPSChartView::update(std::vector<float> &data) {
         if (data[i] not_eq _data[i]) need_update = true;
         _data[i] = data[i];
     }
+    if (auto_resizing) {
+        auto max = std::max_element(data.begin(), data.end());
+        auto min = std::min_element(data.begin(), data.end());
+        bool needUpdate = false;
+        if (*max > lastMax) {
+            lastMax = *max;
+            needUpdate = true;
+        }
+        if (*min < lastMin) {
+            lastMin = *min;
+            needUpdate = true;
+        }
+        if (needUpdate) {
+            axisY.setRange(lastMin, lastMax);
+        }
+    }
 }
 
-
-
+void FPSChartView::setAutoResizing(bool value) {
+    auto_resizing = value;
+}
