@@ -63,7 +63,7 @@ void dsps_fft4r_deinit_fc32(void);
  *      - ESP_OK on success
  *      - One of the error codes from DSP library
  */
-
+esp_err_t dsps_fht4r_fc32_ansi_(float *data, int N, float *table, int table_size);
 esp_err_t dsps_fft4r_fc32_ansi_(float *data, int N, float *table, int table_size);
 
 /**

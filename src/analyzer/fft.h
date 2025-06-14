@@ -4,13 +4,10 @@
 #include <cstdio>
 #include <vector>
 
-#include "./dsp/fft/include/dsps_fft2r.h"
-#include "./dsp/fft/include/dsps_fft4r.h"
-
 class FFT {
 public:
     typedef enum {SUCCESS, NOT_INIT, INCORRECT_CONFIGS} fft_status_t;
-    typedef enum {FFT2R, FFT4R} fft_type_t;
+    typedef enum {FFT2R, FFT4R, FHT2R, FHT4R} fft_type_t;
 protected:
     int _samples_size = 0;
     std::vector<float> _buffer;

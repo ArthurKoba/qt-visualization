@@ -90,6 +90,7 @@ void dsps_fft2r_deinit_sc16(void);
  *      - ESP_OK on success
  *      - One of the error codes from DSP library
  */
+esp_err_t dsps_fht2r_fc32_ansi_(float *data, int N, float *w);
 esp_err_t dsps_fft2r_fc32_ansi_(float *data, int N, float *w);
 
 /**@{*/

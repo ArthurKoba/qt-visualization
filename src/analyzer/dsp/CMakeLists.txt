@@ -10,4 +10,7 @@ target_sources(dsp PUBLIC
         fft/float/dsps_fft4r_fc32_ansi.c
         fft/float/dsps_fft2r_bitrev_tables_fc32.c
         fft/float/dsps_fft4r_bitrev_tables_fc32.c
+
+        fft/float/dsps_fht2r_fc32_ansi.c
+        fft/float/dsps_fht4r_fc32_ansi.c
 )
