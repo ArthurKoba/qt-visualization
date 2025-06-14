@@ -48,10 +48,13 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
         amplitudesView = new FPSChartView();
         amplitudesView2 = new FPSChartView();
 
-        amplitudesView->axisY.setRange(-0.10, 1.2);
+//        amplitudesView->axisY.setRange(0, 1);
         amplitudesView->chart()->setTitle("Amplitudes FFT 2-radix");
-        amplitudesView2->axisY.setRange(-0.10, 1.2);
-        amplitudesView2->chart()->setTitle("Amplitudes FFT 4-radix");
+        amplitudesView->setAutoResizing(true);
+
+//        amplitudesView2->axisY.setRange(-0.10, 1.2);
+        amplitudesView2->chart()->setTitle("Amplitudes FHT 2-radix tests");
+        amplitudesView2->setAutoResizing(true);
 
         splitter->addWidget(amplitudesView);
         splitter->addWidget(amplitudesView2);
