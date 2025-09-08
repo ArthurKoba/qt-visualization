@@ -14,6 +14,21 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
         _run_generator();
     }
 
+    if (_cfg.run_serial) {
+        _run_serial();
+        serialView = new FPSChartView();
+//        serialSamplesView->axisY.setRange(-100, 100);
+        serialView->chart()->setTitle("Serial");
+        serialView->setAutoResizing(true);
+//        std::vector<float> test;
+//        for (int i = 0; i < 64; ++i) {
+//            test.push_back(sin(float(i)));
+//        }
+//        serialSamplesView->update(test);
+//        splitter->addWidget(serialSamplesView);
+        window.setCentralWidget(serialView);
+    }
+
     splitter = new QSplitter;
     splitter->setOrientation(Qt::Vertical);
 
@@ -61,8 +76,9 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
     } else if (_cfg.show_amplitudes) {
         qInfo("Analyzer amplitudes only can show when analyzer running");
     }
-
-    window.setCentralWidget(splitter);
+    if (not _cfg.run_serial) {
+        window.setCentralWidget(splitter);
+    }
     window.resize(1200, 800);
 //    window.grabGesture(Qt::PanGesture);
 //    window.grabGesture(Qt::PinchGesture);
@@ -82,6 +98,11 @@ Application::~Application() {
         loopback->set_audio_handler(nullptr);
         loopback->stop();
         qInfo("Loopback stopped successfully");
+    }
+
+    if (serial) {
+        serial->close();
+        qInfo("Serial stopped successfully");
     }
 }
 
@@ -158,4 +179,64 @@ void Application::_run_generator() {
         }
     });
     generator->start();
+}
+
+void Application::_run_serial() {
+    reader_stream = new BDSP::streams::cobs::COBSZPEReaderStream;
+
+    auto cfg = reader_stream->get_strategy().get_config();
+    cfg.delimiter_byte = '\n';
+    reader_stream->get_strategy().set_config(cfg);
+    receiver = new BDSP::BDSPReceiver;
+    receiver->set_stream_reader(reader_stream);
+    receiver->set_error_handler([](BDSP::parse_packet_status_t error, void *ctx) {
+        qInfo("receiver error: %d", error);
+    }, nullptr);
+
+    if (serial) {
+        delete serial;
+    }
+    serial = new QSerialPort(this);
+
+    serial->setParity(QSerialPort::NoParity);
+    serial->setStopBits(QSerialPort::OneStop);
+    serial->setDataBits(QSerialPort::Data8);
+    serial->setFlowControl(QSerialPort::NoFlowControl);
+    serial->setBaudRate(1000000);
+    serial->setReadBufferSize(64);
+    serial->setPortName("COM8");
+
+
+    connect(serial, &QSerialPort::readyRead, this, [this]() {
+        if (this->serial) {
+            auto data = this->serial->readAll();
+//        qInfo("Got data. Size bytes: %d\n", data.size());
+            reader_stream->read(reinterpret_cast<uint8_t *>(data.data()), data.size());
+        };
+    });
+
+    receiver->set_packet_handler([](BDSP::packet_context_t &packet_context, void *packet_handler_context) {
+        auto &app = *reinterpret_cast<Application *>(packet_handler_context);
+        if (not app.serialView) return;
+        if (packet_context.packet_id not_eq 1) {
+            qInfo("Got unknown packet. Packet ID: %d", packet_context.packet_id);
+            return;
+        }
+        static uint32_t j = 0;
+//        qInfo("[%d] Got packet. Packet ID: %d, size: %d", j++, packet_context.packet_id, packet_context.size);
+//        return;
+        size_t samples_size = packet_context.size;
+        samples_size /= 2;
+        std::vector<float> samples;
+        auto *packet_samples = reinterpret_cast<int16_t *>(packet_context.data_ptr);
+        for (int i = 0; i < samples_size; ++i) {
+            samples.push_back(float(packet_samples[i]));
+        }
+        app.serialView->update(samples);
+    }, this);
+
+
+    if (serial->open(QSerialPort::ReadOnly)) {
+        qInfo("port opened");
+    }
 }

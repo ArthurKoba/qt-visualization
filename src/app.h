@@ -4,18 +4,22 @@
 #include <QApplication>
 #include <QMainWindow>
 #include <QSplitter>
+#include <QSerialPort>
 
 #include "analyzer/analyzer.h"
 #include "analyzer/generator/generator.h"
 #include "loopback/factory.h"
 #include "charts/fps.h"
+#include "BDSP/receiver.h"
+#include "BDSP/streams/cobs/reader.h"
 
 class Application : public QApplication {
 public:
     struct Config {
-        bool run_loopback = true;
+        bool run_loopback = false;
+        bool run_serial = true;
         bool run_generator = false;
-        bool run_analyser = true;
+        bool run_analyser = false;
         bool show_generator_samples = false;
         bool show_raw_samples = false;
         bool show_samples = false;
@@ -28,6 +32,7 @@ private:
     Config _cfg;
 
     FPSChartView *rawSamplesView = nullptr;
+    FPSChartView *serialView = nullptr;
     FPSChartView *generatorSamplesView = nullptr;
     FPSChartView *samplesView = nullptr;
     FPSChartView *amplitudesView = nullptr;
@@ -35,12 +40,16 @@ private:
     Analyzer *analyzer = nullptr;
     Generator *generator = nullptr;
     audio::loopback::IAudioLoopback *loopback = nullptr;
+    QSerialPort *serial{};
+    BDSP::BDSPReceiver *receiver = nullptr;
+    BDSP::streams::cobs::COBSZPEReaderStream *reader_stream = nullptr;
     QSplitter *splitter;
     QMainWindow window;
 
     void _run_analyzer();
     void _run_generator();
     void _run_loopback();
+    void _run_serial();
 };
 
 

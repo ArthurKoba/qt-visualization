@@ -5,6 +5,17 @@ set(BUILD_SHARED_LIBS ON)
 add_executable(${APP_NAME} main.cpp)
 target_sources(${APP_NAME} PRIVATE app.h app.cpp)
 
+include(FetchContent)
+
+FetchContent_Declare(
+        BDSP
+        GIT_REPOSITORY https://github.com/KobaProduction/BDSP.git
+        FIND_PACKAGE_ARGS NAMES BDSP
+)
+
+FetchContent_MakeAvailable(BDSP)
+find_package(BDSP)
+
 set(APP_PROJECT_LIBS
         audio core charts analyzer
 )
@@ -17,6 +28,8 @@ target_link_libraries(${APP_NAME} PUBLIC
         Qt::Core
         Qt::Gui
         Qt::Widgets
+        Qt::SerialPort
+        BDSP
         ${APP_PROJECT_LIBS}
 )
 
