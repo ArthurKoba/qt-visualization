@@ -16,21 +16,62 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
 
     if (_cfg.run_serial) {
         _run_serial();
-        serialView = new FPSChartView(FPSChartView::BAR);
-//        serialSamplesView->axisY.setRange(-100, 100);
-        serialView->chart()->setTitle("Serial");
-        serialView->setAutoResizing(true);
-//        std::vector<float> test;
-//        for (int i = 0; i < 64; ++i) {
-//            test.push_back(sin(float(i)));
-//        }
-//        serialSamplesView->update(test);
-//        splitter->addWidget(serialSamplesView);
-        window.setCentralWidget(serialView);
+
     }
 
     splitter = new QSplitter;
     splitter->setOrientation(Qt::Vertical);
+
+
+
+    if (_cfg.show_serial_samples) {
+        serialSamplesView = new FPSChartView();
+//        serialSamplesView->axisY.setRange(-100, 100);
+        serialSamplesView->chart()->setTitle("Serial Samples");
+        serialSamplesView->setAutoResizing(true);
+        splitter->addWidget(serialSamplesView);
+//        window.setCentralWidget(serialSamplesView);
+    }
+
+    if (_cfg.show_serial_audio_spectre) {
+        serialSpectreView = new FPSChartView(FPSChartView::BAR);
+//        serialSamplesView->axisY.setRange(-100, 100);
+        serialSpectreView->chart()->setTitle("Serial Spectre");
+        serialSpectreView->setAutoResizing(true);
+        splitter->addWidget(serialSpectreView);
+//        window.setCentralWidget(serialSpectreView);
+    }
+
+
+
+    if (receiver and (_cfg.show_serial_samples or _cfg.show_serial_audio_spectre)) {
+        receiver->set_packet_handler([](BDSP::packet_context_t &packet_context, void *packet_handler_context) {
+            auto &app = *reinterpret_cast<Application *>(packet_handler_context);
+            if (packet_context.packet_id not_eq 1) {
+                qInfo("Got unknown packet. Packet ID: %d", packet_context.packet_id);
+                return;
+            }
+            if (packet_context.packet_id == 1 and app.serialSamplesView) {
+
+                return;
+            } else if (packet_context.packet_id == 1 and app.serialSpectreView) {
+                size_t samples_size = packet_context.size;
+                samples_size /= 2;
+                std::vector<float> samples;
+                auto *packet_samples = reinterpret_cast<int16_t *>(packet_context.data_ptr);
+                for (int i = 0; i < samples_size; ++i) {
+                    samples.push_back(float(packet_samples[i]));
+                }
+                app.serialSpectreView->update(samples);
+                return;
+            }
+//            static uint32_t j = 0;
+//        qInfo("[%d] Got packet. Packet ID: %d, size: %d", j++, packet_context.packet_id, packet_context.size);
+//        return;
+            qWarning("Incorrect serial packet processing\n");
+        }, this);
+    }
+
 
     if (_cfg.show_raw_samples and loopback) {
         rawSamplesView = new FPSChartView();
@@ -76,9 +117,7 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
     } else if (_cfg.show_amplitudes) {
         qInfo("Analyzer amplitudes only can show when analyzer running");
     }
-    if (not _cfg.run_serial) {
-        window.setCentralWidget(splitter);
-    }
+    window.setCentralWidget(splitter);
     window.resize(1200, 800);
 //    window.grabGesture(Qt::PanGesture);
 //    window.grabGesture(Qt::PinchGesture);
@@ -215,25 +254,6 @@ void Application::_run_serial() {
         };
     });
 
-    receiver->set_packet_handler([](BDSP::packet_context_t &packet_context, void *packet_handler_context) {
-        auto &app = *reinterpret_cast<Application *>(packet_handler_context);
-        if (not app.serialView) return;
-        if (packet_context.packet_id not_eq 1) {
-            qInfo("Got unknown packet. Packet ID: %d", packet_context.packet_id);
-            return;
-        }
-        static uint32_t j = 0;
-//        qInfo("[%d] Got packet. Packet ID: %d, size: %d", j++, packet_context.packet_id, packet_context.size);
-//        return;
-        size_t samples_size = packet_context.size;
-        samples_size /= 2;
-        std::vector<float> samples;
-        auto *packet_samples = reinterpret_cast<int16_t *>(packet_context.data_ptr);
-        for (int i = 0; i < samples_size; ++i) {
-            samples.push_back(float(packet_samples[i]));
-        }
-        app.serialView->update(samples);
-    }, this);
 
 
     if (serial->open(QSerialPort::ReadOnly)) {

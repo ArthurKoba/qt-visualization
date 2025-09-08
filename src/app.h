@@ -20,10 +20,12 @@ public:
         bool run_serial = true;
         bool run_generator = false;
         bool run_analyser = false;
+        bool show_serial_samples = false;
         bool show_generator_samples = false;
         bool show_raw_samples = false;
         bool show_samples = false;
-        bool show_amplitudes = true;
+        bool show_amplitudes = false;
+        bool show_serial_audio_spectre = true;
     };
 
     Application(int &argc, char **argv, int = ApplicationFlags);
@@ -32,7 +34,8 @@ private:
     Config _cfg;
 
     FPSChartView *rawSamplesView = nullptr;
-    FPSChartView *serialView = nullptr;
+    FPSChartView *serialSamplesView = nullptr;
+    FPSChartView *serialSpectreView = nullptr;
     FPSChartView *generatorSamplesView = nullptr;
     FPSChartView *samplesView = nullptr;
     FPSChartView *amplitudesView = nullptr;
