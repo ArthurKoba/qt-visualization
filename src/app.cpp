@@ -16,7 +16,7 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
 
     if (_cfg.run_serial) {
         _run_serial();
-        serialView = new FPSChartView();
+        serialView = new FPSChartView(FPSChartView::BAR);
 //        serialSamplesView->axisY.setRange(-100, 100);
         serialView->chart()->setTitle("Serial");
         serialView->setAutoResizing(true);
