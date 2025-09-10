@@ -1,5 +1,9 @@
 #include "app.h"
 
+#include "charts/line.h"
+#include "charts/bar.h"
+#include "charts/freq.h"
+
 Application::Application(int &argc, char **argv, int flags) : QApplication(argc, argv, flags) {
 
     if (_cfg.run_analyser) {
@@ -25,21 +29,25 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
 
 
     if (_cfg.show_serial_samples) {
-        serialSamplesView = new FPSChartView();
-//        serialSamplesView->axisY.setRange(-100, 100);
+        serialSamplesView = new LineChartView();
+        serialSamplesView->set_range(-100, 100);
         serialSamplesView->chart()->setTitle("Serial Samples");
-        serialSamplesView->setAutoResizing(true);
+        serialSamplesView->set_auto_resizing(true);
+        serialSamplesView->set_auto_gain(true, 100, -100);
         splitter->addWidget(serialSamplesView);
-//        window.setCentralWidget(serialSamplesView);
     }
 
     if (_cfg.show_serial_audio_spectre) {
-        serialSpectreView = new FPSChartView(FPSChartView::BAR);
-//        serialSamplesView->axisY.setRange(-100, 100);
+        serialSpectreView = new BarChartView();
+//        serialSpectreView->axisX.setTickCount(31);
+//        serialSpectreView->axisX.setLabelFormat("%.0f");
+//        serialSpectreView->axisX.setMinorTickCount(9);
         serialSpectreView->chart()->setTitle("Serial Spectre");
-        serialSpectreView->setAutoResizing(true);
+        serialSpectreView->set_auto_resizing(true);
+        serialSpectreView->set_auto_gain(true, 255, 0, 2);
+        serialSpectreView->set_range(0, 255);
+
         splitter->addWidget(serialSpectreView);
-//        window.setCentralWidget(serialSpectreView);
     }
 
 
@@ -74,8 +82,8 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
 
 
     if (_cfg.show_raw_samples and loopback) {
-        rawSamplesView = new FPSChartView();
-        rawSamplesView->axisY.setRange(-1, 1);
+        rawSamplesView = new LineChartView();
+        rawSamplesView->set_range(-1, 1);
         rawSamplesView->chart()->setTitle("Raw samples");
         splitter->addWidget(rawSamplesView);
     } else if (_cfg.show_raw_samples) {
@@ -83,8 +91,8 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
     }
 
     if (_cfg.show_generator_samples and generator) {
-        generatorSamplesView = new FPSChartView();
-        generatorSamplesView->axisY.setRange(-1, 1);
+        generatorSamplesView = new LineChartView();
+        generatorSamplesView->set_range(-1, 1);
         generatorSamplesView->chart()->setTitle("Generator samples");
         splitter->addWidget(generatorSamplesView);
     } else if (_cfg.show_generator_samples) {
@@ -92,8 +100,8 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
     }
 
     if (_cfg.show_samples and analyzer) {
-        samplesView = new FPSChartView();
-        samplesView->axisY.setRange(-1, 1);
+        samplesView = new LineChartView();
+        samplesView->set_range(-1, 1);
         samplesView->chart()->setTitle("Analyzer samples");
         splitter->addWidget(samplesView);
     } else if (_cfg.show_samples) {
@@ -101,19 +109,13 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
     }
 
     if (_cfg.show_amplitudes and analyzer) {
-        amplitudesView = new FPSChartView();
-        amplitudesView2 = new FPSChartView();
+        amplitudesView = new FreqChartView();
 
-//        amplitudesView->axisY.setRange(0, 1);
-        amplitudesView->chart()->setTitle("Amplitudes FFT 2-radix");
-        amplitudesView->setAutoResizing(true);
-
-//        amplitudesView2->axisY.setRange(-0.10, 1.2);
-        amplitudesView2->chart()->setTitle("Amplitudes FHT 2-radix tests");
-        amplitudesView2->setAutoResizing(true);
+        amplitudesView->set_range(0, 1);
+        amplitudesView->chart()->setTitle("Amplitudes FFT 4-radix");
+        amplitudesView->set_auto_resizing(true);
 
         splitter->addWidget(amplitudesView);
-        splitter->addWidget(amplitudesView2);
     } else if (_cfg.show_amplitudes) {
         qInfo("Analyzer amplitudes only can show when analyzer running");
     }
@@ -159,9 +161,6 @@ void Application::_run_analyzer() {
 
         if (amplitudesView) {
             amplitudesView->update(analyzer->amplitudes.left);
-        }
-        if (amplitudesView2) {
-            amplitudesView2->update(analyzer->amplitudes.right);
         }
     });
 

@@ -9,14 +9,23 @@ target_link_libraries(charts
 )
 
 set(public_headers
+        include/charts/abs.h
         include/charts/fps.h
+        include/charts/bar.h
+        include/charts/line.h
         include/charts/mixins.h
+
+        include/charts/freq.h
 )
 
 set(sources
         ${public_headers}
+        abs.cpp
         fps.cpp
+        bar.cpp
+        line.cpp
         mixins.cpp
+        freq.cpp
 )
 
 target_sources(charts PRIVATE ${sources})

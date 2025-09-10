@@ -9,7 +9,7 @@
 #include "analyzer/analyzer.h"
 #include "analyzer/generator/generator.h"
 #include "loopback/factory.h"
-#include "charts/fps.h"
+#include "charts/abs.h"
 #include "BDSP/receiver.h"
 #include "BDSP/streams/cobs/reader.h"
 
@@ -33,13 +33,12 @@ public:
 private:
     Config _cfg;
 
-    FPSChartView *rawSamplesView = nullptr;
-    FPSChartView *serialSamplesView = nullptr;
-    FPSChartView *serialSpectreView = nullptr;
-    FPSChartView *generatorSamplesView = nullptr;
-    FPSChartView *samplesView = nullptr;
-    FPSChartView *amplitudesView = nullptr;
-    FPSChartView *amplitudesView2 = nullptr;
+    AbstractChartView *rawSamplesView = nullptr;
+    AbstractChartView *serialSamplesView = nullptr;
+    AbstractChartView *serialSpectreView = nullptr;
+    AbstractChartView *generatorSamplesView = nullptr;
+    AbstractChartView *samplesView = nullptr;
+    AbstractChartView *amplitudesView = nullptr;
     Analyzer *analyzer = nullptr;
     Generator *generator = nullptr;
     audio::loopback::IAudioLoopback *loopback = nullptr;
