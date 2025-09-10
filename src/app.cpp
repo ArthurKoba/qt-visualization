@@ -55,14 +55,11 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
     if (receiver and (_cfg.show_serial_samples or _cfg.show_serial_audio_spectre)) {
         receiver->set_packet_handler([](BDSP::packet_context_t &packet_context, void *packet_handler_context) {
             auto &app = *reinterpret_cast<Application *>(packet_handler_context);
-            if (packet_context.packet_id not_eq 1) {
+            if (packet_context.packet_id < 1 or packet_context.packet_id > 2) {
                 qInfo("Got unknown packet. Packet ID: %d", packet_context.packet_id);
                 return;
             }
             if (packet_context.packet_id == 1 and app.serialSamplesView) {
-
-                return;
-            } else if (packet_context.packet_id == 1 and app.serialSpectreView) {
                 size_t samples_size = packet_context.size;
                 samples_size /= 2;
                 std::vector<float> samples;
@@ -70,7 +67,18 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
                 for (int i = 0; i < samples_size; ++i) {
                     samples.push_back(float(packet_samples[i]));
                 }
-                app.serialSpectreView->update(samples);
+                app.serialSamplesView->update(samples);
+                return;
+            } else if (packet_context.packet_id == 2 and app.serialSpectreView) {
+                size_t spectre_size = packet_context.size;
+                spectre_size = 300;
+//                spectre_size /= 2;
+                std::vector<float> spectre;
+                auto *packet_samples = reinterpret_cast<uint8_t *>(packet_context.data_ptr);
+                for (int i = 0; i < spectre_size; ++i) {
+                    spectre.push_back(float(packet_samples[i]));
+                }
+                app.serialSpectreView->update(spectre);
                 return;
             }
 //            static uint32_t j = 0;
@@ -172,9 +180,6 @@ void Application::_run_loopback() {
     if (loopback) {
         return qDebug("Loopback already started");
     }
-    if (not analyzer) {
-        return qDebug("Analyser not exist");
-    }
 
     loopback = audio::loopback::LoopbackFactory::get_loopback();
 
@@ -219,9 +224,11 @@ void Application::_run_generator() {
 
 void Application::_run_serial() {
     reader_stream = new BDSP::streams::cobs::COBSZPEReaderStream;
+//    reader_stream = new BDSP::streams::ppp::PPPReaderStream;
 
     auto cfg = reader_stream->get_strategy().get_config();
     cfg.delimiter_byte = '\n';
+    cfg.size_of_the_sequence_to_be_replaced = 4;
     reader_stream->get_strategy().set_config(cfg);
     receiver = new BDSP::BDSPReceiver;
     receiver->set_stream_reader(reader_stream);

@@ -12,6 +12,7 @@
 #include "charts/abs.h"
 #include "BDSP/receiver.h"
 #include "BDSP/streams/cobs/reader.h"
+#include "BDSP/streams/ppp/reader.h"
 
 class Application : public QApplication {
 public:
@@ -45,6 +46,7 @@ private:
     QSerialPort *serial{};
     BDSP::BDSPReceiver *receiver = nullptr;
     BDSP::streams::cobs::COBSZPEReaderStream *reader_stream = nullptr;
+//    BDSP::streams::ppp::PPPReaderStream *reader_stream = nullptr;
     QSplitter *splitter;
     QMainWindow window;
 

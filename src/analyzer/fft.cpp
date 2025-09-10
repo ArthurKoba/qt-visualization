@@ -36,21 +36,13 @@ FFT::fft_status_t FFT::run(std::vector<float> &samples, std::vector<float> &ampl
         return FFT::INCORRECT_CONFIGS;
     }
 
-    if (_type == FFT2R or _type == FFT4R) {
-        float sample;
-        for (int i = 0; i < _samples_size; i++) {
-            sample = samples[i];
-            _buffer[i * 2 + 0] = sample;
-            _buffer[i * 2 + 1] = 0;
-        }
-    } else if (_type == FHT2R or _type == FHT4R) {
-        float sample;
-        for (int i = 0; i < _samples_size; i++) {
-            sample = samples[i];
-            _buffer[i * 2 + 0] = sample;
-            _buffer[i * 2 + 1] = 0;
-        }
+    float sample;
+    for (int i = 0; i < _samples_size; i++) {
+        sample = samples[i];
+        _buffer[i * 2 + 0] = sample;
+        _buffer[i * 2 + 1] = 0;
     }
+
     esp_err_t ret;
     if (_type == FFT2R) {
         ret = dsps_fft2r_fc32_ansi_(_buffer.data(), _samples_size, dsps_fft_w_table_fc32);

@@ -48,7 +48,7 @@ void WASAPILoopback::_handle_audio(float *samples, size_t count) {
         }
     } else {
         for (int i = 0; i < count * pwfx->nChannels; ++i) {
-            audio_data.data[i] = sin(i);
+            audio_data.data[i] = 0.0f;
         }
     }
     _handler(audio_data);
