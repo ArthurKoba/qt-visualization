@@ -156,7 +156,7 @@ void Application::_run_analyzer() {
 
     analyzer->set_update_handler([this]() {
         if (samplesView) {
-            samplesView->update(analyzer->samples.left);
+            samplesView->update(analyzer->samples.left.get_window());
         }
 
         if (amplitudesView) {
@@ -183,16 +183,19 @@ void Application::_run_loopback() {
     }
 
     loopback->set_audio_handler([this](audio::loopback::loopback_audio data) {
-        Samples samples(data.samples);
+        std::vector<float> left;
+        std::vector<float> right;
+        left.resize(data.samples);
+        right.resize(data.samples);
         for (int i = 0; i < data.samples; ++i) {
-            samples.left[i] = data.data[i];
-            samples.right[i] = data.data[i + data.samples];
+            left[i] = data.data[i];
+            right[i] = data.data[i + data.samples];
         }
         if (_cfg.show_raw_samples and rawSamplesView) {
-            rawSamplesView->update(samples.left);
+            rawSamplesView->update(left);
         }
         if (analyzer) {
-            analyzer->add_samples(samples);
+            analyzer->add_samples(left, right);
         }
     });
 
@@ -207,13 +210,8 @@ void Application::_run_generator() {
     generator = new Generator;
 
     generator->set_handler([this](std::vector<float> data) {
-        Samples samples(data.size());
-        for (int i = 0; i < data.size(); ++i) {
-            samples.left[i] = data[i];
-            samples.right[i] = data[i];
-        }
         if (generatorSamplesView) {
-            generatorSamplesView->update(samples.left);
+            generatorSamplesView->update(data);
         }
     });
     generator->start();

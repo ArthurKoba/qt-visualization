@@ -8,7 +8,9 @@ add_subdirectory(dsp)
 add_subdirectory(generator)
 
 target_sources(analyzer PUBLIC
-        analyzer.cpp fft.cpp
+        analyzer.cpp
+        audio_window.cpp
+        fft.cpp
 )
 
 target_link_libraries(analyzer PUBLIC

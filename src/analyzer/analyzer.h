@@ -7,21 +7,18 @@
 
 #include "core/abs_task.h"
 #include "fft.h"
+#include "audio_window.h"
 
-class ValuesContainer {
-public:
-    static void move_and_join(std::vector<float> &values, std::vector<float> &target);
-};
 
-class Samples : public ValuesContainer {
+class Samples {
 public:
-    std::vector<float> left;
-    std::vector<float> right;
+    AudioWindow left;
+    AudioWindow right;
 
     explicit Samples(size_t size = 0);
 };
 
-class Amplitudes : public ValuesContainer {
+class Amplitudes {
 public:
     std::vector<float> left;
     std::vector<float> right;
@@ -50,7 +47,7 @@ public:
 
     Analyzer();
 
-    void add_samples(Samples &samples_);
+    void add_samples(const std::vector<float>& left, const std::vector<float> &right);
 
     void set_update_handler(update_handler_t handler);
 };
