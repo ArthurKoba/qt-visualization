@@ -11,7 +11,7 @@ class FPSChartView : public AbstractChartView, public FPSMixin {
 protected:
     QLabel *_fps_label;
     void _setFPS(qreal fps);
-    void _on_update() override;
+    void _on_chart_updated() override;
 public:
     explicit FPSChartView();
 };

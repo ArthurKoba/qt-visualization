@@ -1,20 +1,27 @@
 #include "freq.h"
 
-FreqChartView::FreqChartView() {
+FreqChartView::FreqChartView(qreal freq_step) {
     chart()->setTitle("Freq Chart");
-    pen = QPen(Qt::blue, 3, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
-    pen.setWidth(3);
-//    categoryAxis.append("LOW", 20);
-//    categoryAxis.append("MIDDLE", 250);
-//    categoryAxis.append("HIGH", 300);
-//    chart()->addAxis(&categoryAxis, Qt::AlignBottom);
-//    chart()->addAxis(&freqAxis, Qt::AlignBottom);
-//    freqAxis.set_range(0, qreal(_data.size()));
-//    auto labels = freqAxis.categoriesLabels();
-//    for (const auto &label: labels) {
-//        freqAxis.remove(label);
-//    }
-//    for (int i = 0; i < _data.size() / 10; ++i) {
-//        freqAxis.append(QString::number(qreal(float(i) * 11.72f)), i * 10);
-//    }
+//    _pen = QPen(Qt::blue, 1, Qt::SolidLine, Qt::SquareCap, Qt::MiterJoin);
+
+    chart()->addAxis(&_freq_axis, Qt::AlignBottom);
+    _freq_axis.setLabelFormat("%.0f");
+    _freq_axis.hide();
+    update_freq_step(freq_step);
+}
+
+
+void FreqChartView::_on_updated_data_size(size_t new_size) {
+    AbstractChartView::_on_updated_data_size(new_size);
+//    size_t width = new_size > 1000 ? 1 : new_size > 500 : 2, ;
+//    pen.setWidth(0);
+    update_freq_step(_freq_step);
+}
+
+void FreqChartView::update_freq_step(qreal freq_step) {
+    if (freq_step and freq_step > 1) {
+        _freq_step = freq_step;
+        _freq_axis.setRange(0, _freq_step * qreal(_data.size()));
+        _freq_axis.show();
+    }
 }

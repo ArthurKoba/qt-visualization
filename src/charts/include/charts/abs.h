@@ -12,20 +12,21 @@ protected:
     bool _need_update = false;
     bool _auto_resizing = false;
     bool _auto_gain = false;
-    float _gain_min_max{};
-    float _gain_min_min{};
+    qreal _gain_min_max{};
+    qreal _gain_min_min{};
     size_t _gain_speed{};
-    float _last_min_value;
-    float _last_max_value;
+    qreal _last_min_value;
+    qreal _last_max_value;
 
     QTimer _data_update_timer;
-    QAbstractSeries *_series;
+    QAbstractSeries *_series{};
     QValueAxis _axis_x;
     QValueAxis _axis_y;
 
     void _init_series();
     virtual void _update_chart_data() = 0;
-    virtual void _on_update() {};
+    virtual void _on_chart_updated() {};
+    virtual void _on_updated_data_size(size_t new_size) {};
 public:
     AbstractChartView();
     void set_auto_resizing(bool value);

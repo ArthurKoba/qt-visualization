@@ -23,6 +23,6 @@ FPSChartView::FPSChartView() : FPSMixin(this) {
     });
 }
 
-void FPSChartView::_on_update() {
+void FPSChartView::_on_chart_updated() {
     _frameCall();
 }

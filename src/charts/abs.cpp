@@ -8,14 +8,20 @@ AbstractChartView::AbstractChartView() {
 
     chart()->addAxis(&_axis_x, Qt::AlignBottom);
     chart()->addAxis(&_axis_y, Qt::AlignLeft);
-    chart()->setTitle("ABS chart");
+    chart()->setTitle("Abstract chart");
 
-    _last_max_value = -std::numeric_limits<float>::infinity();
-    _last_min_value = std::numeric_limits<float>::infinity();
+    _last_max_value = -std::numeric_limits<qreal>::infinity();
+    _last_min_value = std::numeric_limits<qreal>::infinity();
 
     _axis_y.setRange(-1, 1);
+    _axis_x.setLabelFormat("%.0f");
 
-    QObject::connect(&_data_update_timer, &QTimer::timeout, this, &AbstractChartView::_update_chart_data);
+    QObject::connect(&_data_update_timer, &QTimer::timeout, this, [this] () {
+        if (not _need_update) return;
+        _update_chart_data();
+        _on_chart_updated();
+        _need_update = false;
+    });
 
     _data_update_timer.setInterval(1000 / 200);
     _data_update_timer.start();
@@ -35,10 +41,10 @@ void AbstractChartView::update(std::vector<float> &data) {
     if (data.size() not_eq _data.size()) {
         _data.resize(data.size(), 0);
         _axis_x.setRange(0, qreal(_data.size()));
+        _on_updated_data_size(data.size());
         _need_update = true;
     }
     for (int i = 0; i < data.size(); ++i) {
-        // todo AVX optimisation
         if (data[i] not_eq _data[i]) _need_update = true;
         _data[i] = data[i];
     }
@@ -89,7 +95,3 @@ void AbstractChartView::set_range(qreal min, qreal max) {
     _last_max_value = max;
     _axis_y.setRange(min, max);
 }
-
-
-
-

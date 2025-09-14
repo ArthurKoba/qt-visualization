@@ -8,7 +8,7 @@
 class BarChartView : public FPSChartView {
 protected:
     QBarSet *_set;
-    QPen pen;
+    QPen _pen;
 public:
     BarChartView();
     void _update_chart_data() override;

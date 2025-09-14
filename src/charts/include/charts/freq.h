@@ -5,10 +5,14 @@
 
 class FreqChartView final: public BarChartView {
 protected:
-    QCategoryAxis category_axis;
-//    QCategoryAxis freq_axis;
+    qreal _freq_step;
+    QValueAxis  _freq_axis;
+    void _on_updated_data_size(size_t new_size) override;
+
 public:
-    FreqChartView();
+    explicit FreqChartView(qreal freq_step = 1);
+
+    void update_freq_step(qreal freq_step);
 };
 
 #endif //QT_VISUALIZATION_FREQ_H
