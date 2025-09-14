@@ -39,9 +39,11 @@ if (BUILD_SHARED_LIBS)
         list(APPEND LIB_FILES "$<TARGET_FILE:${lib}>")
     endforeach()
 
+    list(APPEND LIB_FILES "$<TARGET_FILE:BDSP>")
+
     add_custom_command(
             TARGET ${APP_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
             ${LIB_FILES}
             "$<TARGET_FILE_DIR:${APP_NAME}>"
     )
