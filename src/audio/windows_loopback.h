@@ -30,7 +30,7 @@ class WASAPILoopback final : public virtual IAudioLoopback, public AbstractTask 
 
         void _after_close_task() override;
 
-        void _handle_audio(float *samples, size_t count);
+        void _handle_audio(const float *samples, size_t count, size_t sample_rate);
 
         int _init();
 

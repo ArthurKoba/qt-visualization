@@ -34,9 +34,10 @@ uint64_t WASAPILoopback::_before_run_task() {
     return result;
 }
 
-void WASAPILoopback::_handle_audio(float *samples, size_t count) {
+void WASAPILoopback::_handle_audio(const float *samples, size_t count, size_t sample_rate) {
     if (not _handler) return;
     loopback_audio audio_data;
+    audio_data.sample_rate = sample_rate;
     audio_data.data = new float[count * pwfx->nChannels];
     audio_data.samples = count;
     if (samples) {
@@ -82,7 +83,7 @@ uint64_t WASAPILoopback::_task() {
                 data = nullptr; // Буфер молчания
             }
             if (frames) {
-                _handle_audio(reinterpret_cast<float *>(data), frames);
+                _handle_audio(reinterpret_cast<float *>(data), frames, size_t(pwfx->nSamplesPerSec));
             }
 
             hr = pCaptureClient->ReleaseBuffer(frames);

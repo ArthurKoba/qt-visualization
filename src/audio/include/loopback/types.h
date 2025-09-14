@@ -6,6 +6,7 @@
 
 namespace audio::loopback {
     typedef struct {
+        size_t sample_rate;
         float *data;
         size_t samples;
         size_t channels;

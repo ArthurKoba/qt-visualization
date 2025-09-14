@@ -188,6 +188,7 @@ void Application::_run_loopback() {
     }
 
     loopback->set_audio_handler([this](audio::loopback::loopback_audio data) {
+        static size_t sample_rate = 0;
         std::vector<float> left;
         std::vector<float> right;
         left.resize(data.samples);
@@ -199,8 +200,15 @@ void Application::_run_loopback() {
         if (_cfg.show_raw_samples and rawSamplesView) {
             rawSamplesView->update(left);
         }
-        if (analyzer) {
-            analyzer->add_samples(left, right);
+
+        if (not analyzer) return;
+        analyzer->add_samples(left, right);
+        if (sample_rate not_eq data.sample_rate) {
+            sample_rate = data.sample_rate;
+            analyzer->update_sample_rate(sample_rate);
+            if (amplitudesView) {
+                reinterpret_cast<FreqChartView*>(amplitudesView)->update_freq_step(analyzer->get_freq_step());
+            }
         }
     });
 
