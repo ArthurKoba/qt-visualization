@@ -15,6 +15,13 @@ void FreqChartView::_on_updated_data_size(size_t new_size) {
     AbstractChartView::_on_updated_data_size(new_size);
 //    size_t width = new_size > 1000 ? 1 : new_size > 500 : 2, ;
 //    pen.setWidth(0);
+    std::vector<QValueAxis *> axes;
+    axes.push_back(&_freq_axis);
+    axes.push_back(&_axis_x);
+    for (auto axis: axes) {
+        axis->setTickCount(16);
+    }
+
     update_freq_step(_freq_step);
 }
 

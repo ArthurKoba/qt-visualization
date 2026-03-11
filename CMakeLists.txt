@@ -4,6 +4,6 @@ project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 23)
 
-find_package(Qt6 REQUIRED COMPONENTS Charts Core Gui Multimedia SerialPort)
+find_package(Qt6 REQUIRED COMPONENTS Charts Core Gui Multimedia SerialPort DataVisualization)
 
 add_subdirectory(src)

@@ -28,6 +28,8 @@ FFT::fft_status_t FFT::init(int samples_size, fft_type_t type) {
     return FFT::SUCCESS;
 }
 
+
+
 FFT::fft_status_t FFT::run(std::vector<float> &samples, std::vector<float> &amplitudes) {
     if (_samples_size == 0) {
         return FFT::NOT_INIT;
@@ -79,19 +81,27 @@ FFT::fft_status_t FFT::run(std::vector<float> &samples, std::vector<float> &ampl
 
 
     if (_type == FFT2R or _type == FFT4R) {
+        auto samples_size = float(_samples_size);
+//        for (int i = 0; i < amplitudes_size; i++) {
+//            amplitudes[i] = powf(_buffer[i * 2 + 0], 2) + powf(_buffer[i * 2 + 1], 2);
+//            amplitudes[i] = sqrtf(amplitudes[i]);
+//            amplitudes[i] /= samples_size;
+//        }
         for (int i = 0; i < amplitudes_size; i++) {
-            amplitudes[i] = sqrtf(
-                    powf(_buffer[i * 2 + 0], 2) + powf(_buffer[i * 2 + 1], 2)
-            ) / _samples_size;
+            amplitudes[i] = powf(_buffer[i * 2 + 0], 2) + powf(_buffer[i * 2 + 1], 2);
+            amplitudes[i] = sqrtf(amplitudes[i]);
+//            amplitudes[i] /= 1.41;
+            amplitudes[i] /= samples_size;
+
         }
     }
 
-    if (_type == FHT2R or _type == FHT4R) {
-        float temp;
-        for (int i = 0; i < amplitudes_size; i++) {
-            temp = _buffer[i * 2 + 0] - _buffer[i * 2 + 1];
-            amplitudes[i] = abs(temp);
-        }
-    }
+//    if (_type == FHT2R or _type == FHT4R) {
+//        float temp;
+//        for (int i = 0; i < amplitudes_size; i++) {
+//            temp = _buffer[i * 2 + 0] - _buffer[i * 2 + 1];
+//            amplitudes[i] = abs(temp);
+//        }
+//    }
     return FFT::SUCCESS;
 }

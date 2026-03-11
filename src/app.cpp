@@ -51,14 +51,19 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
     }
 
 
+    if (_cfg.show_serial_fast_amplitudes) {
+        serialFastAmplitudesView = new BarChartView();
+        serialFastAmplitudesView->chart()->setTitle("Serial Fast Amplitudes");
+        serialFastAmplitudesView->set_auto_resizing(false);
+        serialFastAmplitudesView->set_range(0, 255);
+        splitter->addWidget(serialFastAmplitudesView);
+    }
 
-    if (receiver and (_cfg.show_serial_samples or _cfg.show_serial_audio_spectre)) {
+
+    if (receiver and (_cfg.show_serial_samples or _cfg.show_serial_audio_spectre or _cfg.show_serial_fast_amplitudes)) {
         receiver->set_packet_handler([](BDSP::packet_context_t &packet_context, void *packet_handler_context) {
             auto &app = *reinterpret_cast<Application *>(packet_handler_context);
-            if (packet_context.packet_id < 1 or packet_context.packet_id > 2) {
-                qInfo("Got unknown packet. Packet ID: %d", packet_context.packet_id);
-                return;
-            }
+
             if (packet_context.packet_id == 1 and app.serialSamplesView) {
                 size_t samples_size = packet_context.size;
                 samples_size /= 2;
@@ -80,11 +85,29 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
                 }
                 app.serialSpectreView->update(spectre);
                 return;
+            } else if (packet_context.packet_id == 3 and app.serialFastAmplitudesView) {
+                std::vector<float> amplitudes;
+                amplitudes.resize(packet_context.size);
+                auto *data = reinterpret_cast<uint8_t *>(packet_context.data_ptr);
+                for (int i = 0; i < amplitudes.size(); ++i) {
+                    amplitudes[i] = float(data[i]);
+                }
+                app.serialFastAmplitudesView->update(amplitudes);
+                return;
+            } else if (packet_context.packet_id == 4 and app.serialFastAmplitudesView) {
+                std::vector<float> amplitudes;
+                amplitudes.resize(packet_context.size / 4);
+                auto *data = reinterpret_cast<float *>(packet_context.data_ptr);
+                for (int i = 0; i < amplitudes.size(); ++i) {
+                    amplitudes[i] = float(data[i]);
+                }
+                app.serialFastAmplitudesView->update(amplitudes);
+                return;
             }
 //            static uint32_t j = 0;
 //        qInfo("[%d] Got packet. Packet ID: %d, size: %d", j++, packet_context.packet_id, packet_context.size);
 //        return;
-            qWarning("Incorrect serial packet processing\n");
+            qWarning("Incorrect serial packet processing");
         }, this);
     }
 
@@ -122,16 +145,50 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
         amplitudesView->set_range(0, 1);
         amplitudesView->chart()->setTitle("Amplitudes FFT 4-radix");
         amplitudesView->set_auto_resizing(true);
+        amplitudesView->set_auto_gain(true, 1, 0);
 
         splitter->addWidget(amplitudesView);
     } else if (_cfg.show_amplitudes) {
         qInfo("Analyzer amplitudes only can show when analyzer running");
     }
-    window.setCentralWidget(splitter);
-    window.resize(1200, 800);
-//    window.grabGesture(Qt::PanGesture);
-//    window.grabGesture(Qt::PinchGesture);
-    window.show();
+
+    if (_cfg.show_test_amplitudes and analyzer) {
+        testAmplitudesView = new LineChartView();
+
+        testAmplitudesView->set_range(0, 1);
+        testAmplitudesView->chart()->setTitle("test amplitudes");
+        testAmplitudesView->set_auto_resizing(true);
+        testAmplitudesView->set_auto_gain(true, 1, 0);
+
+        splitter->addWidget(testAmplitudesView);
+    } else if (_cfg.show_test_amplitudes) {
+        qInfo("test Analyzer amplitudes only can show when analyzer running");
+    }
+
+
+    tabWidget.setWindowTitle("qt-visualization");
+
+    const QSize screenSize = tabWidget.screen()->size();
+    const QSize minimumGraphSize{screenSize.width() / 2, qRound(screenSize.height() / 1.75)};
+//
+    if (_cfg.show_surface) {
+        surfaceView = new SurfaceGraph();
+        if (!surfaceView->initialize(minimumGraphSize, screenSize)) {
+            qWarning("Couldn't initialize the OpenGL context.");
+        }
+        tabWidget.addTab(surfaceView->surfaceWidget(), "surface tab");
+    }
+
+
+
+    tabWidget.addTab(splitter, "main");
+    tabWidget.resize(1200, 800);
+    tabWidget.show();
+
+////    window.setCentralWidget(tabWidget);
+////    window.grabGesture(Qt::PanGesture);
+////    window.grabGesture(Qt::PinchGesture);
+////    window.show();
 }
 
 Application::~Application() {
@@ -169,6 +226,10 @@ void Application::_run_analyzer() {
 
         if (amplitudesView) {
             amplitudesView->update(analyzer->amplitudes.left);
+        }
+
+        if (testAmplitudesView) {
+            testAmplitudesView->update(analyzer->amplitudes_test.left);
         }
     });
 
@@ -231,15 +292,12 @@ void Application::_run_generator() {
 }
 
 void Application::_run_serial() {
-    reader_stream = new BDSP::streams::cobs::COBSZPEReaderStream;
-//    reader_stream = new BDSP::streams::ppp::PPPReaderStream;
-
-    auto cfg = reader_stream->get_strategy().get_config();
+    receiver = new std::remove_pointer<decltype(receiver)>::type();
+    auto cfg = receiver->get_read_stream().get_strategy().get_config();
     cfg.delimiter_byte = '\n';
     cfg.size_of_the_sequence_to_be_replaced = 4;
-    reader_stream->get_strategy().set_config(cfg);
-    receiver = new BDSP::BDSPReceiver;
-    receiver->set_stream_reader(reader_stream);
+    receiver->get_read_stream().get_strategy().set_config(cfg);
+
     receiver->set_error_handler([](BDSP::parse_packet_status_t error, void *ctx) {
         qInfo("receiver error: %d", error);
     }, nullptr);
@@ -261,14 +319,17 @@ void Application::_run_serial() {
     connect(serial, &QSerialPort::readyRead, this, [this]() {
         if (this->serial) {
             auto data = this->serial->readAll();
-//        qInfo("Got data. Size bytes: %d\n", data.size());
-            reader_stream->read(reinterpret_cast<uint8_t *>(data.data()), data.size());
+            receiver->get_read_stream().read(reinterpret_cast<uint8_t *>(data.data()), data.size());
         };
     });
 
-
+    receiver->set_packet_handler([] (BDSP::packet_context_t &packet, void *ctx) {
+        qWarning("Got packet, ID: %d. But packet handler not set...", packet.packet_id);
+    }, nullptr);
 
     if (serial->open(QSerialPort::ReadOnly)) {
         qInfo("port opened");
+    } else {
+        qWarning("Failed opening port");
     }
 }

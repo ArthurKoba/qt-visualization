@@ -10,23 +10,25 @@
 #include "analyzer/generator/generator.h"
 #include "loopback/factory.h"
 #include "charts/abs.h"
-#include "BDSP/receiver.h"
-#include "BDSP/streams/cobs/reader.h"
-#include "BDSP/streams/ppp/reader.h"
+#include "surfacegraph.h"
+#include "BDSP/receivers.h"
 
 class Application : public QApplication {
 public:
     struct Config {
-        bool run_loopback = false;
-        bool run_serial = true;
+        bool run_loopback = true;
+        bool run_serial = false;
         bool run_generator = false;
-        bool run_analyser = false;
+        bool run_analyser = true;
         bool show_serial_samples = false;
         bool show_generator_samples = false;
         bool show_raw_samples = false;
         bool show_samples = false;
-        bool show_amplitudes = false;
-        bool show_serial_audio_spectre = true;
+        bool show_amplitudes = true;
+        bool show_test_amplitudes = true;
+        bool show_serial_fast_amplitudes = false;
+        bool show_serial_audio_spectre = false;
+        bool show_surface = true;
     };
 
     Application(int &argc, char **argv, int = ApplicationFlags);
@@ -36,19 +38,21 @@ private:
 
     AbstractChartView *rawSamplesView = nullptr;
     AbstractChartView *serialSamplesView = nullptr;
+    AbstractChartView *serialFastAmplitudesView = nullptr;
     AbstractChartView *serialSpectreView = nullptr;
     AbstractChartView *generatorSamplesView = nullptr;
     AbstractChartView *samplesView = nullptr;
     AbstractChartView *amplitudesView = nullptr;
+    AbstractChartView *testAmplitudesView = nullptr;
+    SurfaceGraph *surfaceView = nullptr;
+
     Analyzer *analyzer = nullptr;
     Generator *generator = nullptr;
     audio::loopback::IAudioLoopback *loopback = nullptr;
     QSerialPort *serial{};
-    BDSP::BDSPReceiver *receiver = nullptr;
-    BDSP::streams::cobs::COBSZPEReaderStream *reader_stream = nullptr;
-//    BDSP::streams::ppp::PPPReaderStream *reader_stream = nullptr;
+    BDSP::COBSZPEReceiver *receiver = nullptr;
     QSplitter *splitter;
-    QMainWindow window;
+    QTabWidget tabWidget;
 
     void _run_analyzer();
     void _run_generator();
