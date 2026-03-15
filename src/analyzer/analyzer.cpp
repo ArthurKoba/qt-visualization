@@ -94,7 +94,9 @@ uint64_t Analyzer::_task() {
         timer.start();
         if (_need_update) {
             std::vector<float> temp_amplitudes;
+            std::vector<float> mel_amplitudes;
             temp_amplitudes.resize(amplitudes.left.size(), 0.0f);
+            mel_amplitudes.resize(80, 0.0f);
             auto status = fft.run(samples.left.get_window(), temp_amplitudes);
 
             if (_sample_rate and temp_amplitudes.size() == _bark_scale.size()) {
@@ -107,12 +109,18 @@ uint64_t Analyzer::_task() {
                 amplitudes.left[i] = temp_amplitudes[i];
             }
 
-//            whitening.process(temp_amplitudes,
-//                              amplitudes_test.left);
+
             fft_to_mel(temp_amplitudes,
                        _sample_rate,
                        amplitudes_test.left,
-                       40);
+                       150);
+
+            for (int i = 0; i < amplitudes.left.size(); ++i) {
+                amplitudes.left[i] *= float(i);
+            }
+
+//            whitening.process(mel_amplitudes,
+//                              amplitudes_test.left);
 //            for (int i = 0; i < amplitudes_test.left.size(); ++i) {
 //                amplitudes_test.left[i] = temp_amplitudes[i];
 //            }
@@ -160,7 +168,7 @@ Analyzer::Analyzer() {
     _samples_size = 4096;
     _sample_rate = 0;
     _amplitudes_size = _samples_size / 2;
-    whitening = SpectralWhitening(2048);
+    whitening = SpectralWhitening(80);
 //    _smoothing_percent = 60;
 
     samples = Samples(_samples_size);

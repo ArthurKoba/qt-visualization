@@ -13,23 +13,19 @@
 
 using namespace Qt::StringLiterals;
 
-const int sampleCountX = 150;
-const int sampleCountZ = 150;
-const int heightMapGridStepX = 6;
-const int heightMapGridStepZ = 6;
-const float sampleMin = -8.f;
-const float sampleMax = 8.f;
-
-const float areaWidth = 8000.f;
-const float areaHeight = 8000.f;
-const float aspectRatio = 0.1389f;
-const float minRange = areaWidth * 0.49f;
+const int sampleCountX = 100;
+const int sampleCountZ = 100;
+const float sampleMin = 1.f;
+const float sampleMax = 1.f;
 
 SurfaceGraphModifier::SurfaceGraphModifier(Q3DSurface *surface, QLabel *label, QObject *parent) :
       QObject(parent),
       m_graph(surface),
       m_textField(label)
 {
+
+    updateElapsedTimer.start();
+
     m_graph->scene()->activeCamera()->setZoomLevel(85.f);
     m_graph->scene()->activeCamera()->setCameraPreset(Q3DCamera::CameraPresetIsometricRight);
     m_graph->activeTheme()->setType(Q3DTheme::ThemeRetro);
@@ -86,16 +82,88 @@ void SurfaceGraphModifier::fillSqrtSinProxy()
         // to the rounding errors.
         float z = qMin(sampleMax, (i * stepZ + sampleMin));
         for (int j = 0; j < sampleCountX; ++j) {
-//            float x = qMin(sampleMax, (j * stepX + sampleMin));
-//            float R = qSqrt(z * z+ x * x) + 0.01f;
-//            float y = (qSin(R) / R + 0.24f) * 1.61f;
+            float x = qMin(sampleMax, (j * stepX + sampleMin));
+            float R = qSqrt(z * z+ x * x) + 0.01f;
+            float y = (qSin(R) / R + 0.24f) * 1.61f;
             newRow->append(QSurfaceDataItem({static_cast<float>(i - 8), static_cast<float>(sin(i * j)), static_cast<float>(j - 8) }));
+            newRow->append(QSurfaceDataItem({x, y, z}));
         }
         dataArray->append(newRow);
     }
 
     m_sqrtSinProxy->resetArray(dataArray);
     //! [1]
+}
+
+
+void SurfaceGraphModifier::update(Spectrogram *spectrogram) {
+    if (not spectrogram or spectrogram->channels() < 3) return;
+    if (updateElapsedTimer.elapsed() < 25) return; // Пропускаем, если прошло < 25 мс
+    updateElapsedTimer.restart();
+
+
+
+    m_graph->axisX()->setRange(0, static_cast<float>(spectrogram->channels()/2));
+    m_graph->axisZ()->setRange(0, static_cast<float>(spectrogram->history_size()/2));
+
+    auto *dataArray = new QSurfaceDataArray();
+
+    dataArray->reserve(static_cast<qsizetype>(spectrogram->channels()));
+
+    for (int ch = 0; ch < spectrogram->channels(); ch++) {
+        auto channel = spectrogram->get_channel_history_reversed(ch);
+        auto *newRow = new QSurfaceDataRow;
+        newRow->reserve(static_cast<qsizetype>(channel.size()));
+        for (size_t j = 0; j < channel.size(); ++j) {
+            newRow->append(QSurfaceDataItem({static_cast<float>(ch), static_cast<float>(channel[j]), static_cast<float>(j) }));
+        }
+        dataArray->append(newRow);
+    }
+    m_sqrtSinProxy->resetArray(dataArray);
+
+}
+
+void SurfaceGraphModifier::update(std::vector<float> &data) {
+
+
+
+    if (updateElapsedTimer.elapsed() < 10) return; // Пропускаем, если прошло < 25 мс
+    updateElapsedTimer.restart();
+
+    m_graph->axisZ()->setRange(0, data.size());
+
+    auto *dataArray = new QSurfaceDataArray;
+    dataArray->reserve(8);
+//
+    for (int i = 0; i < 8; ++i) {
+        auto *newRow = new QSurfaceDataRow;
+        newRow->reserve(static_cast<qsizetype>(data.size()));
+        for (size_t j = 0; j < data.size(); ++j) {
+            newRow->append(QSurfaceDataItem({static_cast<float>(j), static_cast<float>(data[j]), static_cast<float>(i) }));
+        }
+        dataArray->append(newRow);
+    }
+
+
+//    float stepX = (sampleMax - sampleMin) / float(sampleCountX - 1);
+//    float stepZ = (sampleMax - sampleMin) / float(sampleCountZ - 1);
+//    auto *dataArray = new QSurfaceDataArray;
+//    dataArray->reserve(sampleCountZ);
+//    for (int i = 0 ; i < sampleCountZ ; ++i) {
+//        auto *newRow = new QSurfaceDataRow;
+//        newRow->reserve(sampleCountX);
+//        float z = qMin(sampleMax, (i * stepZ + sampleMin));
+//        for (int j = 0; j < sampleCountX; ++j) {
+//            float x = qMin(sampleMax, (j * stepX + sampleMin));
+//            float R = qSqrt(z * z+ x * x) + 0.01f;
+//            float y = (qSin(R) / R + 0.24f) * 1.61f;
+//            newRow->append(QSurfaceDataItem({x, y, z}));
+//        }
+//        dataArray->append(newRow);
+//    }
+
+
+    m_sqrtSinProxy->resetArray(dataArray);
 }
 
 void SurfaceGraphModifier::enableSqrtSinModel(bool enable)
@@ -248,13 +316,6 @@ void SurfaceGraphModifier::setGreenToRedGradient()
     m_sqrtSinSeries->setBaseGradient(gr);
     m_sqrtSinSeries->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
 }
-
-
-
-
-
-
-
 
 
 void SurfaceGraphModifier::handleElementSelected(QAbstract3DGraph::ElementType type)

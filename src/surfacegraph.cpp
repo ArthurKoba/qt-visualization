@@ -202,7 +202,7 @@ bool SurfaceGraph::initialize(const QSize &minimumGraphSize, const QSize &maximu
     vLayout->addWidget(labelSelectedItem);
 
     // Create the controller
-    auto *modifier = new SurfaceGraphModifier(m_surfaceGraph, labelSelectedItem, this);
+    modifier = new SurfaceGraphModifier(m_surfaceGraph, labelSelectedItem, this);
 
     // Connect widget controls to controller
 

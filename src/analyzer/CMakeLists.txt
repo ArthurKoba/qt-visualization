@@ -11,6 +11,7 @@ target_sources(analyzer PUBLIC
         analyzer.cpp
         audio_window.cpp
         fft.cpp
+        spectrogram.h spectrogram.cpp
 )
 
 target_link_libraries(analyzer PUBLIC

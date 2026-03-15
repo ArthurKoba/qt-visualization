@@ -173,6 +173,7 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
 //
     if (_cfg.show_surface) {
         surfaceView = new SurfaceGraph();
+        spectrogram = new Spectrogram(400);
         if (!surfaceView->initialize(minimumGraphSize, screenSize)) {
             qWarning("Couldn't initialize the OpenGL context.");
         }
@@ -230,6 +231,11 @@ void Application::_run_analyzer() {
 
         if (testAmplitudesView) {
             testAmplitudesView->update(analyzer->amplitudes_test.left);
+        }
+
+        if (surfaceView and surfaceView->modifier and spectrogram) {
+            spectrogram->push(analyzer->amplitudes_test.left);
+            surfaceView->modifier->update(spectrogram);
         }
     });
 

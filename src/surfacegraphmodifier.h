@@ -14,6 +14,7 @@
 #include <QtWidgets/qslider.h>
 #include <QtWidgets/qlabel.h>
 #include <QtCore/qpropertyanimation.h>
+#include "analyzer/spectrogram.h"
 
 
 class SurfaceGraphModifier : public QObject
@@ -46,6 +47,9 @@ public:
     void adjustZMin(int min);
     void adjustZMax(int max);
 
+    void update(std::vector<float> &data);
+    void update(Spectrogram *data);
+
 public Q_SLOTS:
     void enableSqrtSinModel(bool enable);
 
@@ -58,6 +62,7 @@ private:
     void resetSelection();
 
 private:
+    QElapsedTimer updateElapsedTimer;
     Q3DSurface *m_graph = nullptr;
     QSurfaceDataProxy *m_sqrtSinProxy = nullptr;
     QSurface3DSeries *m_sqrtSinSeries = nullptr;

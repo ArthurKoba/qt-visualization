@@ -8,6 +8,7 @@
 
 #include "analyzer/analyzer.h"
 #include "analyzer/generator/generator.h"
+#include "analyzer/spectrogram.h"
 #include "loopback/factory.h"
 #include "charts/abs.h"
 #include "surfacegraph.h"
@@ -45,6 +46,7 @@ private:
     AbstractChartView *amplitudesView = nullptr;
     AbstractChartView *testAmplitudesView = nullptr;
     SurfaceGraph *surfaceView = nullptr;
+    Spectrogram *spectrogram = nullptr;
 
     Analyzer *analyzer = nullptr;
     Generator *generator = nullptr;

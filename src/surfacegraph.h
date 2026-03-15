@@ -6,6 +6,7 @@
 
 #include <QtCore/qobject.h>
 #include <QtDataVisualization/q3dsurface.h>
+#include "surfacegraphmodifier.h"
 
 class SurfaceGraph : public QObject
 {
@@ -13,6 +14,8 @@ class SurfaceGraph : public QObject
 public:
     SurfaceGraph();
     ~SurfaceGraph();
+
+    SurfaceGraphModifier *modifier = nullptr;
 
     bool initialize(const QSize &minimumGraphSize, const QSize &maximumGraphSize);
     QWidget *surfaceWidget() { return m_surfaceWidget; }
