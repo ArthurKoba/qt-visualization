@@ -1,0 +1,23 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run (No Debugger)",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "${workspaceRoot}/cmake-build-debug/src/qt-application.exe",
+      "cwd": "${workspaceRoot}/cmake-build-debug/src",
+      "env": {
+        "PATH": "C:/Qt/6.9.2/mingw_64/bin;${env:PATH}"
+      },
+      "preLaunchTask": "cmake: build"
+    },
+    {
+      "name": "Debug (With Debugger)",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "integratedTerminal",
+      "preLaunchTask": "cmake: build"
+    }
+  ]
+}

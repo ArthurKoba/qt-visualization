@@ -1,0 +1,37 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "cmake: configure",
+      "type": "cmake",
+      "command": "configure",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Configure the project with CMake"
+    },
+    {
+      "label": "cmake: build",
+      "type": "cmake",
+      "command": "build",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Build the project with CMake"
+    },
+    {
+      "label": "cmake: clean",
+      "type": "cmake",
+      "command": "clean",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Clean the build directory"
+    },
+    {
+      "label": "cmake: install",
+      "type": "cmake",
+      "command": "install",
+      "group": "build",
+      "problemMatcher": [],
+      "detail": "Install the project"
+    }
+  ]
+}

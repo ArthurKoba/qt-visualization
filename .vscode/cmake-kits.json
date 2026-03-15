@@ -1,0 +1,18 @@
+[
+  {
+    "name": "MinGW 13.2.0",
+    "toolchainFile": null,
+    "preferredGenerators": [
+      {
+        "name": "MinGW Makefiles"
+      }
+    ],
+    "cmakeSettings": {
+      "CMAKE_C_COMPILER": "gcc",
+      "CMAKE_CXX_COMPILER": "g++",
+      "CMAKE_PREFIX_PATH": "C:/Qt/6.9.2/mingw_64",
+      "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
+      "CMAKE_CXX_STANDARD": "23"
+    }
+  }
+]
