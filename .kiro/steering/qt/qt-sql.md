@@ -1,3 +1,7 @@
+---
+inclusion: manual
+---
+
 # Qt SQL
 
 ## Описание

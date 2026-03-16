@@ -91,7 +91,7 @@ SerialDataSource (BDSP) → ChartRenderer
 
 1. Использовать только C++ (без C кода и QML описаний)
 2. Соблюсти стандарты проекта (snake_case, Doxygen, header guards)
-3. Обновить PROJECT_MAP.md с новой архитектурой
+3. Обновить project-map.md с новой архитектурой
 
 ## Архитектура ядра и взаимодействие компонентов
 

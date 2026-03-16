@@ -1,3 +1,6 @@
+---
+inclusion: manu
+---
 # Карта проекта
 
 ## Обзор
@@ -6,6 +9,75 @@
 ## Архитектура
 
 ### Основные компоненты
+
+#### 0. Сервер агрегации (`src/aggregator_server/`)
+
+**Назначение:** Центральный компонент системы для отслеживания доступности и состояния всех компонентов архитектуры конвейера обработки данных. Использует протокол BDSP для надежной передачи пакетов.
+
+**Основной класс: `AggregatorServer`**
+- TCP сервер на статическом порту 8212
+- Регистрация компонентов с проверкой уникальности UUID
+- Мониторинг heartbeat через BDSP пакеты (каждые 100 мс, таймаут 500 мс)
+- Публикация событий подключения/отключения компонентов через BDSP
+- Отправка списка активных компонентов в JSON формате через BDSP
+- Каждое TCP соединение обрабатывается отдельным `TcpBDSPSocket`
+- Логирование подключений/отключений клиентов
+
+**Протокол BDSP:**
+- `TcpBDSPSocket` — обработчик пакетов для одного TCP соединения
+- `PacketSerializer/PacketValidator` — утилиты сериализации и валидации
+- `AggregatorClient` — пример клиента, использующего BDSP
+- Типы пакетов: heartbeat, component_registration, event_notification, command_request/response
+
+**Структура пакета BDSP:**
+- Тип пакета (1 байт)
+- UUID источника (16 байт)
+- UUID назначения (16 байт)
+- Номер последовательности (4 байта)
+- Временная метка (8 байт)
+- Данные пакета (переменная длина)
+
+**Типы данных:**
+- `PacketType` — типы BDSP пакетов (heartbeat, component_registration, event_notification, etc.)
+- `packet_header_t` — заголовок BDSP пакета
+- `registration_packet_t` — пакет регистрации компонента
+- `heartbeat_packet_t` — пакет heartbeat
+- `event_notification_packet_t` — пакет уведомления о событии
+- `ComponentType` — тип компонента (data_source, data_processor, data_sink, core)
+- `ComponentState` — состояние компонента (connecting, registered, active, inactive, disconnected)
+- `EventType` — тип события (component_connected, component_disconnected, component_state_changed)
+- `socket_info_t` — информация о компоненте (QUuid UUID, тип, QHostAddress адрес, порт, состояние)
+- `component_event_t` — событие изменения состояния компонента (QUuid UUID)
+- `address_utils::format_address_ipv4_priority()` — утилита форматирования адресов с приоритетом IPv4
+- `std::hash<QUuid>` — специализация хеш-функции для использования QUuid в unordered_map
+
+**Исполняемые файлы:**
+- `aggregator_server_app` — сервер агрегации с поддержкой аргументов:
+  - `-s, --start` — запуск сервера (обязательно)
+  - `-p, --component_server_port <PORT>` — порт прослушивания (по умолчанию 8212)
+  - `-h, --help` — справка
+- `aggregator_bdsp_test_client` — тестовый BDSP клиент для проверки работы сервера
+- `aggregator_test_client` — устаревший тестовый клиент (текстовый протокол)
+
+**Протокол взаимодействия BDSP:**
+1. Клиент подключается к серверу по TCP
+2. Клиент отправляет пакет `component_registration` с JSON данными компонента
+3. Сервер отвечает пакетом `component_registration` с результатом (success/error)
+4. При успешной регистрации клиент начинает отправлять `heartbeat` пакеты
+5. Сервер рассылает `event_notification` пакеты всем клиентам при изменениях
+6. Клиенты могут запрашивать список компонентов через `command_request`
+
+**Примеры использования:**
+```bash
+# Запуск сервера на порту 8212
+aggregator_server_app -s
+
+# Запуск BDSP тестового клиента
+aggregator_bdsp_test_client
+
+# Вывод справки
+aggregator_server_app -h
+```
 
 #### 1. Точка входа в приложение (`src/main.cpp`)
 - Создает `Application` (наследуется от `QApplication`)
@@ -99,7 +171,9 @@ struct loopback_audio {
 - `FreqChartView` — линейный график с частотной осью (Гц)
 - `AbsChartView` — абстрактный базовый класс
 
-**Примечание:** Текущая реализация использует Qt Charts. Для новых функций визуализации рекомендуется использовать [Qt Graphs](./qt/qt-graphs.md) — современный модуль с поддержкой 2D и 3D графиков.
+**Примечание:** Текущая реализация использует Qt Charts. Для новых функций визуализации рекомендуется использовать [Qt Graphs](.kiro/steering/qt/qt-graphs.md) — современный модуль с поддержкой 2D и 3D графиков.
+
+Для загрузки полной документации по Qt Charts используй: `#[[file:.kiro/steering/qt/qt-charts.md]]`
 
 
 #### 6. Ядро утилит (`src/core/`)
@@ -119,7 +193,9 @@ struct loopback_audio {
 - Методы: `push()`, `get_spectrogram()`, `get_channel_history()`
 - Поддержка настройки размера истории
 
-**Примечание:** Текущая реализация использует Qt Data Visualization (deprecated). Для новых проектов рекомендуется использовать [Qt Graphs](./qt/qt-graphs.md) с поддержкой 3D графиков (`Q3DScatter`, `Q3DBars`, `Q3DSurface`).
+**Примечание:** Текущая реализация использует Qt Data Visualization (deprecated). Для новых проектов рекомендуется использовать [Qt Graphs](.kiro/steering/qt/qt-graphs.md) с поддержкой 3D графиков (`Q3DScatter`, `Q3DBars`, `Q3DSurface`).
+
+Для загрузки полной документации по Qt Data Visualization используй: `#[[file:.kiro/steering/qt/qt-datavisualization.md]]`
 
 ## Система сборки
 
@@ -184,8 +260,10 @@ bool show_surface = true;      // Показать 3D поверхность
 
 - **BDSP**: https://github.com/KobaProduction/BDSP
   - Оптимизирована для встраиваемых систем
-  - библиотека для реализации пакетной передачи в каналах связи где есть только методы отправки и получения байт или наборов байт, в которых отствутет разделение на пакеты данных. 
-  - изначально разработана для последовательного порта, однако её можно адаптировать под любые каналы связи, в том числе TCP/IP, UDP, CAN, I2C, SPI.
+  - Библиотека для реализации пакетной передачи в каналах связи где есть только методы отправки и получения байт или наборов байт, в которых отсутствует разделение на пакеты данных
+  - Изначально разработана для последовательного порта, однако её можно адаптировать под любые каналы связи, в том числе TCP/IP, UDP, CAN, I2C, SPI
+  - В проекте используется для надежной передачи пакетов между сервером агрегации и клиентами
+  - Основные классы: `COBSZPETransceiver` (трансивер с COBS кодированием и Zero Padding Elimination)
 
 - **ESP-DSP**:  https://github.com/espressif/esp-dsp/
   - Оптимизирована для микроконтроллеров ESP32
