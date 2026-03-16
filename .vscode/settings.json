@@ -11,5 +11,8 @@
   "cmake.buildDirectory": "${workspaceRoot}/cmake-build-debug",
   "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
   "C_Cpp.default.compileCommands": "${workspaceRoot}/cmake-build-debug/compile_commands.json",
-  "C_Cpp.default.cppStandard": "c++23"
+  "C_Cpp.default.cppStandard": "c++23",
+  "terminal.integrated.env.windows": {
+    "PATH": "C:/Program Files/JetBrains/CLion 2024.3.4/bin/cmake/win/x64/bin/;${env:PATH}"
+  }
 }
