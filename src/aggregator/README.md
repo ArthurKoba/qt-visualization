@@ -11,14 +11,13 @@
 Статическая библиотека, содержащая:
 - Типы и интерфейсы для работы с агрегатором
 - Реализацию сервера агрегации
-- Мониторинг heartbeat
 
 ### 2. Исполняемый файл aggregator_server_app
 
 Сервер агрегации, который:
 - Слушает на статическом порту 8212 (или пользовательском через -p)
 - Регистрирует компоненты системы
-- Отслеживает доступность через heartbeat (PING/PONG)
+- Отслеживает доступность через TCP-соединение (разрыв = недоступность)
 - Публикует события подключения/отключения компонентов
 - Предоставляет список активных компонентов
 
@@ -32,10 +31,9 @@ aggregator_server_app -h                    # Справка
 ### 3. Тестовый клиент aggregator_test_client
 
 Тестовое приложение для проверки работы сервера:
-- Генерирует уникальный UUID v4
+- Генерирует или берет из конфигурации уникальный UUID v4
 - Подключается к серверу агрегации
 - Регистрируется как компонент
-- Отправляет PING каждые 100 мс
 - Запрашивает список компонентов
 - Автоматически переподключается при разрыве соединения
 
@@ -46,58 +44,6 @@ aggregator_test_client -p 9000              # Подключение к localhos
 aggregator_test_client -a 192.168.1.1 -p 8212  # Подключение к другому хосту
 ```
 
-## Протокол взаимодействия
-
-### Регистрация компонента
-
-**Запрос:**
-```
-REGISTER:UUID:TYPE:PORT
-```
-
-**Ответ:**
-```
-REGISTER_OK
-```
-или
-```
-REGISTER_FAILED:REASON
-```
-
-### Heartbeat
-
-**Запрос (каждые 100 мс):**
-```
-PING:UUID
-```
-
-**Ответ:**
-```
-PONG
-```
-
-### Запрос списка компонентов
-
-**Запрос:**
-```
-GET_COMPONENTS
-```
-
-**Ответ (JSON):**
-```json
-{
-  "type": "components_list",
-  "components": [
-    {
-      "uuid": "...",
-      "type": 1,
-      "address": "127.0.0.1",
-      "component_server_port": 9999,
-      "state": 2
-    }
-  ]
-}
-```
 
 ## Типы компонентов
 
@@ -110,23 +56,22 @@ GET_COMPONENTS
 ## Состояния компонентов
 
 - `0` — unknown
-- `1` — connecting (подключается)
-- `2` — registered (зарегистрирован)
-- `3` — active (активен)
-- `4` — inactive (неактивен)
-- `5` — disconnected (отключён)
+- `1` — disconnected (отключён)
+- `2` — wait_registration (регистрируется)
+- `3` — registered  (зарегистрирован)
+- `4` — inactive (неактивен, простаивает)
+- `5` — active (активен)
 
 ## Конфигурация
 
-Все параметры определены в `include/aggregator_server/abstract/types.h`:
+Все параметры определены в `include/aggregator/abstract/types.h`:
 
 ```cpp
-namespace config {
-    constexpr uint16_t aggregator_port = 8212;
-    constexpr uint32_t heartbeat_interval_ms = 100;
-    constexpr uint32_t heartbeat_timeout_ms = 500;
-    constexpr uint32_t registration_timeout_ms = 1000;
-    constexpr uint32_t retry_interval_ms = 5000;
+namespace aggregator_component {
+    constexpr uint16_t DEFAULT_PORT = 8212;
+    constexpr uint16_t REGISTRATION_TIMEOUT_MS = 1000;
+    constexpr int32_t CLIENT_RECONNECT_TIMEOUT_MS = 200;
+    constexpr int32_t RECONNECT_TRIES = 3;
 }
 ```
 
@@ -155,16 +100,11 @@ cmake --build build
 
 Можно запустить несколько экземпляров тестового клиента для проверки работы с множественными подключениями.
 
-## Примеры использования
-
-### Запуск сервера
-
 ## Архитектура
 
 Сервер агрегации реализует следующие интерфейсы:
 
 - `IComponentRegistry` — регистрация и управление компонентами
 - `IEventPublisher` — публикация событий
-- `IHeartbeatMonitor` — мониторинг heartbeat
 
 Все компоненты взаимодействуют через TCP сокеты с использованием простого текстового протокола для команд и JSON для структурированных данных.

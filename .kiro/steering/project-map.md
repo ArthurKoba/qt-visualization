@@ -1,5 +1,5 @@
 ---
-inclusion: force
+inclusion: always
 ---
 # Карта проекта
 
@@ -10,24 +10,29 @@ inclusion: force
 
 ### Основные компоненты
 
-#### 0. Сервер агрегации (`src/aggregator_server/`)
+#### 0. Сервер агрегации (`src/aggregator/`)
 
 **Назначение:** Центральный компонент системы для отслеживания доступности и состояния всех компонентов архитектуры конвейера обработки данных. Использует протокол BDSP для надежной передачи пакетов.
 
-**Основной класс: `AggregatorServer`**
+**Основной класс: `AggregatorServer`** (наследуется от `TcpBDSPServer` из `core`)
 - TCP сервер на статическом порту 8212
 - Регистрация компонентов с проверкой уникальности UUID
 - Мониторинг heartbeat через BDSP пакеты (каждые 100 мс, таймаут 500 мс)
 - Публикация событий подключения/отключения компонентов через BDSP
 - Отправка списка активных компонентов в JSON формате через BDSP
-- Каждое TCP соединение обрабатывается отдельным `TcpBDSPSocket`
+- Каждое TCP соединение обрабатывается отдельным `TcpBDSPSocket` (из `core`)
 - Логирование подключений/отключений клиентов
 
-**Протокол BDSP:**
-- `TcpBDSPSocket` — обработчик пакетов для одного TCP соединения
-- `PacketSerializer/PacketValidator` — утилиты сериализации и валидации
-- `AggregatorClient` — пример клиента, использующего BDSP
-- Типы пакетов: heartbeat, component_registration, event_notification, command_request/response
+**Файлы:**
+- `include/aggregator/aggregator_server.h` / `src/aggregator_server.cpp`
+- `include/aggregator/aggregator_client.h` / `src/aggregator_client.cpp`
+- `include/aggregator/abstract/types.h` — типы: `component_info_t`, `registration_data_t`, `component_state_t`, `registered_component_t`, `ComponentType`, `ComponentState`, `PacketType`; константы: `DEFAULT_PORT`, `REGISTRATION_TIMEOUT_MS`, `CLIENT_RECONNECT_TIMEOUT_MS`, `RECONNECT_TRIES`
+- `src/main_server.cpp` — точка входа сервера агрегации
+- `src/main_client.cpp` — точка входа клиента агрегации
+
+**Вспомогательные компоненты:**
+- `AggregatorClient` — клиент для подключения к серверу агрегации
+- Типы пакетов: `component_registration`, `component_info_update`
 
 
 
@@ -42,8 +47,8 @@ inclusion: force
 - `run_loopback` — захват системного аудио
 - `run_serial` — обработка данных по последовательному порту от микроконтроллера
 - `run_generator` — генерация тестовых сигналов
-- `run_analyzer` — обработка аудио с помощью FFT
-- Различные флаги `show_*` для управления видимостью UI
+- `run_analyser` — обработка аудио с помощью FFT
+- Флаги `show_*`: `show_serial_samples`, `show_generator_samples`, `show_raw_samples`, `show_samples`, `show_amplitudes`, `show_test_amplitudes`, `show_serial_fast_amplitudes`, `show_serial_audio_spectre`, `show_surface`
 
 **Ключевые члены:**
 - `Analyzer *analyzer` — обработка FFT и спектральный анализ
@@ -53,6 +58,8 @@ inclusion: force
 - `BDSP::COBSZPEReceiver *receiver` — парсер пакетов по serial
 - `SurfaceGraph *surfaceView` — 3D визуализация поверхности
 - `Spectrogram *spectrogram` — структура данных спектрограммы
+- `QSplitter *splitter`, `QTabWidget tabWidget` — UI-контейнеры
+- Несколько `AbstractChartView*` для разных типов отображения
 
 **Конвейер обработки:**
 1. Loopback захватывает аудио → вызывает `analyzer->add_samples()`
@@ -61,15 +68,15 @@ inclusion: force
 4. Спектрограмма обновляет 3D поверхность
 
 #### 3. Анализатор (`src/analyzer/`)
-**Основной класс: `Analyzer` (наследуется от `AbstractTask`)**
+**Основной класс: `Analyzer`** (наследуется от `AbstractTask`, `final`)
 - Запускается в выделенном потоке (целевая частота кадров — 1000/45 FPS)
-- Использует библиотеку BDSP для FFT (FFT2R/FFT4R/FHT2R/FHT4R)
+- Использует ESP-DSP для FFT (FFT2R/FFT4R/FHT2R/FHT4R)
 - Обрабатывает стереоаудио (левый/правый каналы)
 
 **Ключевые структуры данных:**
-- `Samples samples` — буфер аудио (4096 сэмплов)
+- `Samples samples` — два `AudioWindow` (left/right), размер задаётся при создании
 - `Amplitudes amplitudes` — выходные величины FFT (2048 бинов)
-- `Amplitudes amplitudes_test` — амплитуды по шкале Mel (150 полос)
+- `Amplitudes amplitudes_test` — амплитуды по шкале Mel
 - `SpectralWhitening whitening` — нормализация спектра
 
 **Ключевые методы:**
@@ -77,14 +84,15 @@ inclusion: force
 - `set_update_handler(handler)` — обратный вызов при готовности новых данных
 - `update_sample_rate(rate)` — пересчет масштабных коэффициентов
 - `get_freq_step()` — частотное разрешение (Гц/бин)
+- `generate_bark_scale()`, `generate_volume_scale()` — статические утилиты
 
 **Цепочка обработки сигнала:**
 1. Аудиосэмплы → FFT → спектр величин
 2. Применение весов шкалы Bark
-3. Преобразование в шкалу Mel (40 полос) → `amplitudes_test`
+3. Преобразование в шкалу Mel → `amplitudes_test`
 4. Опциональная спектральная белизна (whitening)
 
-**Файлы:**
+**Файлы** (плоская структура, без `include/src` разделения):
 - `analyzer.h/cpp` — основной класс анализатора
 - `fft.h/cpp` — обертка FFT
 - `audio_window.h/cpp` — применение окна Хеннинга (Hanning)
@@ -98,17 +106,22 @@ inclusion: force
 - Преобразует в формат IEEE FLOAT (32-бит)
 - Вызывает `audio_handler_t` с аудиоданными
 
-**Интерфейс:**
+**Интерфейс** (`include/loopback/types.h`, namespace `audio::loopback`):
 ```cpp
 struct loopback_audio {
+    size_t sample_rate;
     float *data;      // Чередующиеся сэмплы [L,R,L,R,...]
     size_t samples;   // Сэмплов на канал
-    size_t sample_rate;
+    size_t channels;
 };
+class IAudioLoopback { ... };  // set_audio_handler(), start(), stop()
 ```
 
-**Паттерн Factory:**
-- `LoopbackFactory::get_loopback()` возвращает реализацию, специфичную для платформы
+**Файлы:**
+- `include/loopback/types.h` — `loopback_audio`, `audio_handler_t`, `IAudioLoopback`
+- `include/loopback/factory.h` — `LoopbackFactory`
+- `factory.cpp` — реализация фабрики
+- `windows_loopback.h/cpp` — реализация `WASAPILoopback`
 
 #### 5. Графики (`src/charts/`)
 Все графики наследуются от `AbstractChartView` (расширяет `QChartView`):
@@ -122,7 +135,16 @@ struct loopback_audio {
 - `LineChartView` — линейная серия для сигналов во временной области
 - `BarChartView` — столбчатая серия для спектральных данных
 - `FreqChartView` — линейный график с частотной осью (Гц)
-- `AbsChartView` — абстрактный базовый класс
+- `FPSChartView` — график с отображением FPS (наследует `AbstractChartView` + `FPSMixin`)
+- `AbstractChartView` — абстрактный базовый класс
+
+**Файлы** (плоская структура `include/charts/*.h` / `*.cpp`):
+- `include/charts/abs.h` / `abs.cpp`
+- `include/charts/line.h` / `line.cpp`
+- `include/charts/bar.h` / `bar.cpp`
+- `include/charts/freq.h` / `freq.cpp`
+- `include/charts/fps.h` / `fps.cpp`
+- `include/charts/mixins.h` / `mixins.cpp` — `FPSMixin`
 
 **Примечание:** Текущая реализация использует Qt Charts. Для новых функций визуализации рекомендуется использовать [Qt Graphs](.kiro/steering/qt/qt-graphs.md) — современный модуль с поддержкой 2D и 3D графиков.
 
@@ -130,18 +152,36 @@ struct loopback_audio {
 
 
 #### 6. Ядро утилит (`src/core/`)
+
 **`AbstractTask`** — управление потоками:
 - Создание потоков, специфичное для Windows (`CreateThread`)
 - Виртуальный метод `_task()` для рабочей логики
 - Хуки `_before_run_task()`, `_after_close_task()`
 - `_sleep(ms)` для контроля частоты кадров
 
-#### 7. 3D визуализация (`src/surfacegraph.*`)
+**`TcpBDSPSocket`** (`final`) — обработчик BDSP-пакетов для одного TCP-соединения:
+- Наследуется от `QTcpSocket`
+- Инкапсулирует `COBSZPETransceiver` для кодирования/декодирования пакетов
+- Сигналы: `on_got_packet`, `on_bdsp_packet_parsing_error`, `disconnected(TcpBDSPSocket*)`
+- Метод `send_data(packet_id, data, size)` для отправки пакетов
+
+**`TcpBDSPServer`** — базовый TCP-сервер с поддержкой BDSP:
+- Наследуется от `QTcpServer`
+- При входящем соединении создаёт `TcpBDSPSocket` и испускает сигнал `tcp_bdsp_socket_ready`
+- Используется как базовый класс для `AggregatorServer`
+
+**Файлы:**
+- `include/core/tcp_packet_socket.h` / `src/tcp_packet_socket.cpp`
+- `include/core/tcp_packet_server.h` / `src/tcp_packet_server.cpp`
+- `include/core/abs_task.h` / `src/abs_task.cpp`
+- `include/core/utils.h` / `src/utils.cpp`
+
+#### 7. 3D визуализация (`src/surfacegraph.h/cpp`, `src/surfacegraphmodifier.h/cpp`)
 **`SurfaceGraph`** — обертка Qt Data Visualization:
 - `Q3DSurface` для 3D поверхностных графиков
 - `SurfaceGraphModifier` для взаимодействия
 
-**`Spectrogram`** — структура данных:
+**`Spectrogram`** (`src/analyzer/spectrogram.h/cpp`) — структура данных:
 - Кольцевой буфер для спектрограммы временных рядов
 - Методы: `push()`, `get_spectrogram()`, `get_channel_history()`
 - Поддержка настройки размера истории
@@ -158,6 +198,7 @@ qt-visualization/
 ├── CMakeLists.txt (корневой)
 ├── src/
 │   ├── CMakeLists.txt
+│   ├── aggregator/CMakeLists.txt
 │   ├── analyzer/CMakeLists.txt
 │   ├── audio/CMakeLists.txt
 │   ├── charts/CMakeLists.txt
@@ -171,10 +212,11 @@ qt-visualization/
 
 **Цели сборки:**
 - `qt-application` — основной исполняемый файл
+- `aggregator` — сервер и клиент агрегации
 - `analyzer` — статическая/разделяемая библиотека
 - `audio` — платформо-специфичный захват аудио
 - `charts` — библиотека визуализации графиков
-- `core` — библиотека ядра утилит
+- `core` — библиотека ядра утилит (`AbstractTask`, `TcpBDSPSocket`, `TcpBDSPServer`)
 - `dsp` — подкаталог библиотеки ESP-DSP
 
 ## Примечания по платформе
@@ -201,12 +243,19 @@ qt-visualization/
 
 Редактируйте `Application::Config` в `app.h` для включения/выключения компонентов:
 ```cpp
-bool run_loopback = true;      // Включить захват аудио
-bool run_serial = false;       // Включить serial вход
-bool run_generator = false;    // Включить тестовый сигнал
-bool run_analyser = true;      // Включить FFT анализ
-bool show_amplitudes = true;   // Показать график величин FFT
-bool show_surface = true;      // Показать 3D поверхность
+bool run_loopback = true;
+bool run_serial = false;
+bool run_generator = false;
+bool run_analyser = true;
+bool show_serial_samples = false;
+bool show_generator_samples = false;
+bool show_raw_samples = false;
+bool show_samples = false;
+bool show_amplitudes = true;
+bool show_test_amplitudes = true;
+bool show_serial_fast_amplitudes = false;
+bool show_serial_audio_spectre = false;
+bool show_surface = true;
 ```
 
 ## Внешние библиотеки

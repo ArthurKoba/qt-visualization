@@ -9,7 +9,6 @@
 ### Основные компоненты
 
 1. **TcpBDSPSocket** - обработчик пакетов для одного TCP соединения
-2. **PacketSerializer/PacketValidator** - утилиты для работы с пакетами
 3. **AggregatorClient** - пример клиента, использующего BDSP
 4. **Типы пакетов** - определены в `abstract/types.h`
 
@@ -17,27 +16,11 @@
 
 ```cpp
 enum class PacketType : uint8_t {
-    heartbeat = 1,                  // Пакеты heartbeat
-    component_registration = 2,     // Регистрация компонента
-    component_status_update = 3,    // Обновление статуса
-    event_notification = 4,         // Уведомления о событиях
-    data_stream = 5,               // Потоки данных
-    command_request = 6,           // Запросы команд
-    command_response = 7           // Ответы на команды
+    error = 0,
+    component_registration = 1,
+    component_info_update = 2
 };
 ```
-
-### Структура пакета
-
-Каждый пакет содержит:
-- Тип пакета (1 байт)
-- UUID источника (16 байт)
-- UUID назначения (16 байт)
-- Номер последовательности (4 байта)
-- Временная метка (8 байт)
-- Данные пакета (переменная длина)
-
-## Использование
 
 ### Сервер
 
@@ -62,29 +45,6 @@ AggregatorClient client(client_uuid, ComponentType::data_source, "Test Client", 
 client.connect_to_server(QHostAddress::LocalHost, 8212);
 ```
 
-## Сборка
-
-Убедитесь, что библиотека BDSP подключена в CMakeLists.txt:
-
-```cmake
-target_link_libraries(aggregator_server PUBLIC
-    Qt6::Core
-    Qt6::Network
-    BDSP
-)
-```
-
-## Тестирование
-
-1. Запустите сервер:
-```bash
-./aggregator_server_app
-```
-
-2. Запустите тестовый клиент:
-```bash
-./aggregator_bdsp_test_client
-```
 
 ## Протокол взаимодействия
 
@@ -93,19 +53,13 @@ target_link_libraries(aggregator_server PUBLIC
 1. Клиент подключается к серверу по TCP
 2. Клиент отправляет пакет `component_registration` с бинарными данными компонента:
    - Тип компонента (1 байт)
-   - Адрес (строка с длиной)
-   - Порт (2 байта)
-   - Имя компонента (строка с длиной)
+   - Адрес (uuid 16 байт)
+   - Порт сервера компонета для подключения цепочек данных (2 байта)
+   ...
 3. Сервер отвечает пакетом `component_registration` с результатом:
    - Флаг успеха (1 байт)
    - Сообщение об ошибке (строка с длиной, если неуспешно)
 4. При успешной регистрации клиент начинает отправлять heartbeat пакеты
-
-### Heartbeat
-
-- Клиент отправляет пакеты `heartbeat` каждые 100ms
-- Сервер отвечает пакетами `heartbeat` для подтверждения
-- При отсутствии heartbeat в течение 500ms компонент помечается как неактивный
 
 ### События
 
@@ -115,9 +69,6 @@ target_link_libraries(aggregator_server PUBLIC
   - Тип события (1 байт)
   - UUID компонента (16 байт)
   - Новое состояние (1 байт)
-  - Временная метка (8 байт)
-- Сервер отвечает пакетами `heartbeat` для подтверждения
-- При отсутствии heartbeat в течение 500ms компонент помечается как неактивный
 
 ### События
 
@@ -126,13 +77,9 @@ target_link_libraries(aggregator_server PUBLIC
 
 ## Логирование
 
-Используются категории логирования:
-- `aggregator.server.protocol` - протокол сервера
-- `aggregator.client` - клиентская часть
-
 Включение отладочного логирования:
 ```cpp
-QLoggingCategory::setFilterRules("aggregator.*.debug=true");
+;
 ```
 
 ## Расширение
