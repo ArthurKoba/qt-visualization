@@ -14,7 +14,7 @@ else ()
     add_library(${LIB_NAME} )
 endif ()
 
-target_sources(${LIB_NAME} PRIVATE
+target_sources(${LIB_NAME} PUBLIC
         include/aggregator/abstract/types.h
 
         include/aggregator/aggregator_server.h

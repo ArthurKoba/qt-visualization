@@ -15,7 +15,7 @@ else ()
 endif ()
 
 
-target_sources(${LIB_NAME} PRIVATE
+target_sources(${LIB_NAME} PUBLIC
         include/core/abs_task.h
         include/core/tcp_packet_socket.h
         include/core/tcp_packet_server.h
