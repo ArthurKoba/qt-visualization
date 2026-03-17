@@ -8,29 +8,20 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 
-qt_add_executable(${APP_NAME}
-        main.cpp
+add_executable(${APP_NAME} main.cpp)
+target_sources(${APP_NAME} PRIVATE
         app.h app.cpp
         surfacegraph.cpp surfacegraph.h
         surfacegraphmodifier.cpp surfacegraphmodifier.h
-)
-
-set(resource_files
-        "data/oilrig.obj"
-        "data/pipe.obj"
 )
 
 qt6_add_resources(${APP_NAME}  "graphgallery"
         PREFIX
         "/"
         FILES
-        ${resource_files}
+        "data/oilrig.obj"
+        "data/pipe.obj"
 )
-
-#
-#add_executable(${APP_NAME} main.cpp)
-#target_sources(${APP_NAME} PRIVATE app.h app.cpp)
-#
 
 include(FetchContent)
 
@@ -50,6 +41,8 @@ set(APP_PROJECT_LIBS
 foreach(lib IN LISTS APP_PROJECT_LIBS)
     add_subdirectory(${lib})
 endforeach()
+
+add_subdirectory(aggregator)
 
 target_link_libraries(${APP_NAME} PUBLIC
         Qt::Core
