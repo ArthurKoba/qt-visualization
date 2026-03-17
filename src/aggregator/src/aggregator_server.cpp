@@ -17,17 +17,23 @@ AggregatorServer::~AggregatorServer() {
     stop();
 }
 
-bool AggregatorServer::start(uint16_t port) {
+bool AggregatorServer::start(uint16_t port, uint32_t registration_timeout_ms) {
     if (this->isListening()) {
         return true;
     }
 
+    _registration_timeout_ms = registration_timeout_ms;
     if (not this->listen(QHostAddress::Any, port)) {
         qCCritical(aggregator_server, "Error: failed to start server on port %d. Maybe already used...", port);
         return false;
     }
 
     qCInfo(aggregator_server, "Aggregator server started on port %d", port);
+    if (_registration_timeout_ms == 0) {
+        qCInfo(aggregator_server, "Registration timeout: disabled (clients can connect without time limit)");
+    } else {
+        qCInfo(aggregator_server, "Registration timeout: %d ms", _registration_timeout_ms);
+    }
 
     return true;
 }
@@ -126,9 +132,20 @@ void AggregatorServer::on_new_connection(TcpBDSPSocket *socket) {
     _sockets_uuid_map[socket];
     connect(socket, &TcpBDSPSocket::disconnected, this, &AggregatorServer::on_client_disconnected);
     connect(socket, &TcpBDSPSocket::on_got_packet, this, &AggregatorServer::on_got_packet);
-    QTimer::singleShot(aggregator_component::REGISTRATION_TIMEOUT_MS, this, [socket, this]() {
-        if (not this->_get_registration_status(socket)) _disconnect_socket(socket);
-    });
+    
+    // Устанавливаем таймер регистрации только если таймаут не равен 0
+    if (_registration_timeout_ms > 0) {
+        QTimer::singleShot(_registration_timeout_ms, this, [socket, this]() {
+            if (not this->_get_registration_status(socket)) {
+                qCWarning(aggregator_server, "Registration timeout for %s", 
+                          qPrintable(convert_qt_socket_to_string_ip_port(socket)));
+                _disconnect_socket(socket);
+            }
+        });
+    } else {
+        qCDebug(aggregator_server, "Registration timeout disabled for %s", 
+                qPrintable(convert_qt_socket_to_string_ip_port(socket)));
+    }
 }
 
 void AggregatorServer::on_client_disconnected(TcpBDSPSocket *socket) {

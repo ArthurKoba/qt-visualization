@@ -27,7 +27,8 @@ public:
 
     ~AggregatorServer() final;
 
-    bool start(uint16_t port = aggregator_component::DEFAULT_PORT);
+    bool start(uint16_t port = aggregator_component::DEFAULT_PORT, 
+               uint32_t registration_timeout_ms = aggregator_component::REGISTRATION_TIMEOUT_MS);
 
     void stop();
 
@@ -42,6 +43,7 @@ public slots:
 protected:
     QHash<TcpBDSPSocket *, QUuid> _sockets_uuid_map;
     QHash<QUuid, component_info_t> _components_info_map;
+    uint32_t _registration_timeout_ms = aggregator_component::REGISTRATION_TIMEOUT_MS;
 
 private:
     bool _register_component(registration_data_t &registration_data, TcpBDSPSocket *socket);

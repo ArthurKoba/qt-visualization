@@ -23,13 +23,32 @@ enum class ComponentType : uint8_t {
 };
 
 
+/// @brief Состояния компонентов в системе агрегации
+/// 
+/// Жизненный цикл состояний:
+/// unknown -> registered -> inactive -> idle -> active
+///                      \-> disconnected -> off (при длительном отключении)
 enum class ComponentState : uint8_t {
+    /// @brief Неизвестное состояние (заглушка на случай ошибок)
     unknown = 0,
-    disconnected = 1,
-    wait_registration = 2,
+    
+    /// @brief Компонент отключился и длительное время не восстанавливает подключение (более минуты)
+    off = 1,
+    
+    /// @brief Компонент отключен, если простой достигнет минуты - переходит в off
+    disconnected = 2,
+    
+    /// @brief Клиент зарегистрирован, но пока ничего не делает и не сообщает
     registered = 3,
+    
+    /// @brief Клиент сообщил о себе данные и возможности, но пока не готов участвовать в цепочках данных
     inactive = 4,
-    active = 5
+    
+    /// @brief Готов к работе, но активных задач нет, простаивает
+    idle = 5,
+    
+    /// @brief Занят работой
+    active = 6
 };
 
 using uuid_t = QUuid::Id128Bytes;
@@ -57,7 +76,7 @@ struct component_info_t {
     ComponentType type = ComponentType::unknown;
     QIPv6Address address{};
     uint16_t component_server_port{};
-    ComponentState state = ComponentState::wait_registration;
+    ComponentState state = ComponentState::unknown;
 } __attribute__((packed));
 
 struct registered_component_t {
