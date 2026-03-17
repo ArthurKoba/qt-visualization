@@ -1,5 +1,5 @@
 ---
-inclusion: manu
+inclusion: manual
 ---
 # Карта проекта
 
@@ -44,7 +44,7 @@ inclusion: manu
 - `heartbeat_packet_t` — пакет heartbeat
 - `event_notification_packet_t` — пакет уведомления о событии
 - `ComponentType` — тип компонента (data_source, data_processor, data_sink, core)
-- `ComponentState` — состояние компонента (connecting, registered, active, inactive, disconnected)
+- `ComponentState` — состояние компонента (connecting, registered, active, inactive, _disconnected)
 - `EventType` — тип события (component_connected, component_disconnected, component_state_changed)
 - `socket_info_t` — информация о компоненте (QUuid UUID, тип, QHostAddress адрес, порт, состояние)
 - `component_event_t` — событие изменения состояния компонента (QUuid UUID)
