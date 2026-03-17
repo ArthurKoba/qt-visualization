@@ -1,5 +1,5 @@
 ---
-inclusion: fileMatch
+inclusion: force
 fileMatchPattern: '**/*.cpp,**/*.h,**/*.hpp'
 ---
 
@@ -111,8 +111,7 @@ class DataProcessor { };     // класс внутри файла
 **Принцип:** Члены класса должны иметь префиксы, которые явно указывают на уровень доступа.
 
 **Правило:**
-- **Приватные поля и методы** — начинать с префикса `__` (двойное подчеркивание)
-- **Защищенные поля и методы** — начинать с префикса `_` (одиночное подчеркивание)
+- **Приватные и защищенные поля и методы** — начинать с префикса `_` (одиночное  подчеркивание)
 - **Публичные члены** — без префиксов, используется обычный snake_case
 
 ### Организация членов класса
@@ -143,17 +142,17 @@ protected: // Защищенные поля
     int32_t _retry_count;
 private: // Приватные поля
     
-    int32_t __buffer_size;
-    QString __internal_state;
-    QVector<uint8_t> __cache;
+    int32_t _buffer_size;
+    QString _internal_state;
+    QVector<uint8_t> _cache;
 protected:// Приватные методы
     void _notify_socket_observers();
     void _on_server_state_changed() override;
     void _reset_clietn_state(Client *client);
 private:  // Приватные методы
-    void __validate_input();
-    bool __process_internal_data() override;
-    void __cleanup_resources();
+    void _validate_input();
+    bool _process_internal_data() override;
+    void _cleanup_resources();
 };
 ```
 
@@ -254,30 +253,7 @@ uint32_t inverted = compl value;
 // if (flag_a || flag_b) { ... }
 ```
 
-## Структура файлов
 
-### Разделение заголовков и реализации
-
-- **ВСЕГДА** разделяй источники (.h) и реализацию (.cpp) для файлов
-- Заголовки модуля хранятся в: `src/*module-name*/include`
-- Реализации для заголовков хранятся в: `src/*module-name*/src`
-
-### Header Guards
-
-- Используй **Header Guards** вместо `#pragma once`
-- Формат: `MODULE_NAME_FILENAME_H`
-
-**Пример:**
-
-```cpp
-// aggregator_server.h
-#ifndef AGGREGATOR_SERVER_H
-#define AGGREGATOR_SERVER_H
-
-// содержимое
-
-#endif // AGGREGATOR_SERVER_H
-```
 
 ## Комментарии и документация
 

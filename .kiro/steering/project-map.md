@@ -1,5 +1,5 @@
 ---
-inclusion: manual
+inclusion: force
 ---
 # Карта проекта
 
@@ -29,55 +29,8 @@ inclusion: manual
 - `AggregatorClient` — пример клиента, использующего BDSP
 - Типы пакетов: heartbeat, component_registration, event_notification, command_request/response
 
-**Структура пакета BDSP:**
-- Тип пакета (1 байт)
-- UUID источника (16 байт)
-- UUID назначения (16 байт)
-- Номер последовательности (4 байта)
-- Временная метка (8 байт)
-- Данные пакета (переменная длина)
 
-**Типы данных:**
-- `PacketType` — типы BDSP пакетов (heartbeat, component_registration, event_notification, etc.)
-- `packet_header_t` — заголовок BDSP пакета
-- `registration_packet_t` — пакет регистрации компонента
-- `heartbeat_packet_t` — пакет heartbeat
-- `event_notification_packet_t` — пакет уведомления о событии
-- `ComponentType` — тип компонента (data_source, data_processor, data_sink, core)
-- `ComponentState` — состояние компонента (connecting, registered, active, inactive, _disconnected)
-- `EventType` — тип события (component_connected, component_disconnected, component_state_changed)
-- `socket_info_t` — информация о компоненте (QUuid UUID, тип, QHostAddress адрес, порт, состояние)
-- `component_event_t` — событие изменения состояния компонента (QUuid UUID)
-- `address_utils::format_address_ipv4_priority()` — утилита форматирования адресов с приоритетом IPv4
-- `std::hash<QUuid>` — специализация хеш-функции для использования QUuid в unordered_map
 
-**Исполняемые файлы:**
-- `aggregator_server_app` — сервер агрегации с поддержкой аргументов:
-  - `-s, --start` — запуск сервера (обязательно)
-  - `-p, --component_server_port <PORT>` — порт прослушивания (по умолчанию 8212)
-  - `-h, --help` — справка
-- `aggregator_bdsp_test_client` — тестовый BDSP клиент для проверки работы сервера
-- `aggregator_test_client` — устаревший тестовый клиент (текстовый протокол)
-
-**Протокол взаимодействия BDSP:**
-1. Клиент подключается к серверу по TCP
-2. Клиент отправляет пакет `component_registration` с JSON данными компонента
-3. Сервер отвечает пакетом `component_registration` с результатом (success/error)
-4. При успешной регистрации клиент начинает отправлять `heartbeat` пакеты
-5. Сервер рассылает `event_notification` пакеты всем клиентам при изменениях
-6. Клиенты могут запрашивать список компонентов через `command_request`
-
-**Примеры использования:**
-```bash
-# Запуск сервера на порту 8212
-aggregator_server_app -s
-
-# Запуск BDSP тестового клиента
-aggregator_bdsp_test_client
-
-# Вывод справки
-aggregator_server_app -h
-```
 
 #### 1. Точка входа в приложение (`src/main.cpp`)
 - Создает `Application` (наследуется от `QApplication`)
