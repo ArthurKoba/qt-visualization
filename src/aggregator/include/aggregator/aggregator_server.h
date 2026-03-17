@@ -5,7 +5,6 @@
 #include "core/tcp_packet_socket.h"
 #include "core/tcp_packet_server.h"
 
-#include <QTimer>
 #include <QObject>
 #include <QHash>
 #include <QUuid>
@@ -43,6 +42,7 @@ public slots:
 protected:
     QHash<TcpBDSPSocket *, QUuid> _sockets_uuid_map;
     QHash<QUuid, component_info_t> _components_info_map;
+    QHash<QUuid, registered_component_t> _registered_components_map;
     uint32_t _registration_timeout_ms = aggregator_component::REGISTRATION_TIMEOUT_MS;
 
 private:
@@ -54,7 +54,17 @@ private:
 
     void _send_update_component_event(component_info_t &info);
 
+    void _send_component_state_change_event(const QUuid &uuid, ComponentState new_state);
+
     void _broadcast(PacketType packet_type, uint8_t *data, size_t size);
+
+    void _broadcast_except_socket(PacketType packet_type, uint8_t *data, size_t size, TcpBDSPSocket *except_socket);
+
+    void _update_component_state(const QUuid &uuid, ComponentState new_state);
+
+    void _handle_component_offline_timeout(const QUuid &uuid);
+
+    void _start_offline_timer(const QUuid &uuid);
 };
 
 

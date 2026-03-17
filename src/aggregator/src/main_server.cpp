@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <QCommandLineParser>
+#include <QLoggingCategory>
 
 /// @brief Структура конфигурации сервера агрегации
 struct ServerConfiguration {
@@ -141,6 +142,9 @@ int32_t main(int32_t argc, char* argv[]) {
     } else {
         qInfo("Registration timeout: %d ms", config.registration_timeout_ms);
     }
+
+    // Отключаем логирование tcp_socket.bdsp для чистого вывода
+    QLoggingCategory::setFilterRules("tcp_socket.bdsp.debug=false");
 
     // Создание и запуск сервера агрегации
     AggregatorServer server(&app);

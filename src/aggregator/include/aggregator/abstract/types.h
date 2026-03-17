@@ -11,6 +11,7 @@ namespace aggregator_component {
     static constexpr uint16_t REGISTRATION_TIMEOUT_MS = 1000;
     static constexpr int32_t CLIENT_RECONNECT_TIMEOUT_MS = 200;
     static constexpr int32_t RECONNECT_TRIES = 3;
+    static constexpr uint32_t COMPONENT_OFFLINE_TIMEOUT_MS = 60000; // 1 минута
 }
 
 
@@ -56,13 +57,17 @@ using uuid_t = QUuid::Id128Bytes;
 enum class PacketType : uint8_t {
     error = 0,
     component_registration = 1,
-    component_info_update = 2
+    component_info_update = 2,
+    component_state_change = 3
 };
+
+using session_token_t = uint16_t; // CRC16 токен сессии
 
 struct registration_data_t {
     uuid_t uuid;
     ComponentType component_type;
     uint16_t component_server_port;
+    session_token_t session_token; // токен сессии, генерируемый клиентом
 } __attribute__((packed));
 
 struct component_state_t {
@@ -84,6 +89,7 @@ struct registered_component_t {
     ComponentType type;
     uint16_t component_server_port;
     ComponentState state;
+    session_token_t session_token;
 };
 
 

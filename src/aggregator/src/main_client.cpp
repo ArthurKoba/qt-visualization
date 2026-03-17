@@ -7,6 +7,7 @@
 #include <QStandardPaths>
 #include <QTimer>
 #include <QEventLoop>
+#include <QLoggingCategory>
 
 
 /// @brief Структура конфигурации клиента агрегации
@@ -294,6 +295,9 @@ int32_t main(int32_t argc, char *argv[]) {
     } else {
         qInfo("Wait for server: disabled");
     }
+
+    // Отключаем логирование tcp_socket.bdsp для чистого вывода
+    QLoggingCategory::setFilterRules("tcp_socket.bdsp.debug=false");
 
     // Создание конфигурации клиента
     AggregatorClientConfig client_config;

@@ -16,23 +16,33 @@ inclusion: always
 
 **Основной класс: `AggregatorServer`** (наследуется от `TcpBDSPServer` из `core`)
 - TCP сервер на статическом порту 8212
-- Регистрация компонентов с проверкой уникальности UUID
-- Мониторинг heartbeat через BDSP пакеты (каждые 100 мс, таймаут 500 мс)
-- Публикация событий подключения/отключения компонентов через BDSP
-- Отправка списка активных компонентов в JSON формате через BDSP
+- Регистрация компонентов с проверкой уникальности UUID и токенов сессии
+- Восстановление сессий при переподключении через CRC16 токены
+- Управление состояниями компонентов: `unknown`, `off`, `disconnected`, `registered`, `inactive`, `idle`, `active`
+- Автоматический перевод в состояние `off` при отключении на 60 секунд
+- Публикация событий изменения состояния компонентов через BDSP
+- Отправка информации о новых компонентах всем подключенным клиентам
 - Каждое TCP соединение обрабатывается отдельным `TcpBDSPSocket` (из `core`)
-- Логирование подключений/отключений клиентов
+- Унифицированное логирование с текстовыми представлениями состояний
+
+**Протокол обмена:**
+- `PacketType::component_registration` — регистрация компонента с UUID, типом, портом и токеном сессии
+- `PacketType::component_info_update` — полная информация о новом компоненте для всех клиентов
+- `PacketType::component_state_change` — изменение состояния существующего компонента
 
 **Файлы:**
 - `include/aggregator/aggregator_server.h` / `src/aggregator_server.cpp`
 - `include/aggregator/aggregator_client.h` / `src/aggregator_client.cpp`
-- `include/aggregator/abstract/types.h` — типы: `component_info_t`, `registration_data_t`, `component_state_t`, `registered_component_t`, `ComponentType`, `ComponentState`, `PacketType`; константы: `DEFAULT_PORT`, `REGISTRATION_TIMEOUT_MS`, `CLIENT_RECONNECT_TIMEOUT_MS`, `RECONNECT_TRIES`
+- `include/aggregator/utils.h` / `src/utils.cpp` — утилиты форматирования и генерации токенов
+- `include/aggregator/abstract/types.h` — типы: `component_info_t`, `registration_data_t`, `component_state_t`, `registered_component_t`, `ComponentType`, `ComponentState`, `PacketType`, `session_token_t`; константы: `DEFAULT_PORT`, `REGISTRATION_TIMEOUT_MS`, `CLIENT_RECONNECT_TIMEOUT_MS`, `RECONNECT_TRIES`, `COMPONENT_OFFLINE_TIMEOUT_MS`
 - `src/main_server.cpp` — точка входа сервера агрегации
 - `src/main_client.cpp` — точка входа клиента агрегации
 
 **Вспомогательные компоненты:**
-- `AggregatorClient` — клиент для подключения к серверу агрегации
-- Типы пакетов: `component_registration`, `component_info_update`
+- `AggregatorClient` — клиент для подключения к серверу агрегации с автоматическим переподключением
+- Утилиты форматирования: `format_component_info()`, `format_component_state_change()`, `format_component_registration()`
+- Генерация токенов сессии: `generate_session_token()` на основе CRC16 от UUID, типа, порта и случайного числа
+- Преобразование в текст: `component_state_to_string()`, `component_type_to_string()`
 
 
 

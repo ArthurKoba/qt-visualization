@@ -1,6 +1,6 @@
 #include "aggregator/aggregator_client.h"
+#include "aggregator/utils.h"
 #include <QTimer>
-#include <utility>
 
 Q_LOGGING_CATEGORY(aggregator_client, "aggregator.client")
 
@@ -15,6 +15,9 @@ AggregatorClient::AggregatorClient(AggregatorClientConfig config, QObject *paren
     _reconnect_timer.setSingleShot(true);
     connect(&_reconnect_timer, &QTimer::timeout, this, &AggregatorClient::_on_reconnect_timeout);
     set_reconnect_mode(false, 10);
+    
+    // Генерируем токен сессии при создании клиента
+    _session_token = aggregator_utils::generate_session_token(_cfg.uuid, _cfg.type, _cfg.component_server_port);
 }
 
 AggregatorClient::~AggregatorClient() {
@@ -50,6 +53,7 @@ void AggregatorClient::on_socket_connected() {
     data.component_type = _cfg.type;
     data.component_server_port = _cfg.component_server_port;
     data.uuid = _cfg.uuid.toBytes();
+    data.session_token = _session_token; // отправляем наш токен сессии
     _socket.send_data(static_cast<uint8_t>(PacketType::component_registration),
                       reinterpret_cast<uint8_t *>(&data), sizeof(data));
 }
@@ -95,6 +99,32 @@ void AggregatorClient::handle_packet(BDSP::packet_context_t &packet_context) {
     auto packet_type = static_cast<PacketType>(packet_context.packet_id);
 
     switch (packet_type) {
+        case PacketType::component_state_change: {
+            if (packet_context.size not_eq sizeof(component_state_t)) {
+                qCWarning(aggregator_client, "Component state change packet size incorrect.");
+                return;
+            }
+            
+            auto state_data = *reinterpret_cast<component_state_t *>(packet_context.data_ptr);
+            auto uuid = QUuid::fromBytes(&state_data.uuid);
+            
+            // Проверяем, это наш компонент или другой
+            if (uuid == _cfg.uuid) {
+                if (state_data.new_state == ComponentState::registered) {
+                    _is_registered = true;
+                    qCInfo(aggregator_client, "Registration successful! %s", 
+                           qPrintable(aggregator_utils::format_component_state_change(uuid, state_data.new_state)));
+                    emit registered();
+                } else {
+                    qCInfo(aggregator_client, "Our component state changed: %s", 
+                           qPrintable(aggregator_utils::format_component_state_change(uuid, state_data.new_state)));
+                }
+            } else {
+                qCInfo(aggregator_client, "Component state change: %s",
+                        qPrintable(aggregator_utils::format_component_state_change(uuid, state_data.new_state)));
+            }
+            break;
+        }
         case PacketType::component_info_update: {
             if (packet_context.size not_eq sizeof(component_info_t)) {
                 qCWarning(aggregator_client, "Component info packet size incorrect.");
@@ -103,13 +133,9 @@ void AggregatorClient::handle_packet(BDSP::packet_context_t &packet_context) {
 
             auto info = *reinterpret_cast<component_info_t *>(packet_context.data_ptr);
             auto uuid = QUuid::fromBytes(&info.uuid);
-            qCDebug(aggregator_client, "Got new component from aggregation server. UUID: %s, type: %d",
-                    qPrintable(uuid.toString()), info.type);
-            if (uuid == _cfg.uuid and info.state >= ComponentState::registered) {
-                _is_registered = true;
-                qCWarning(aggregator_client, "This component successfully registered!");
-                emit registered();
-            }
+            
+            qCInfo(aggregator_client, "New component: %s",
+                    qPrintable(aggregator_utils::format_component_info(uuid, info.type, info.state)));
             break;
         }
         default:

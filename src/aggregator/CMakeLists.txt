@@ -22,6 +22,9 @@ target_sources(${LIB_NAME} PUBLIC
 
         include/aggregator/aggregator_client.h
         src/aggregator_client.cpp
+
+        include/aggregator/utils.h
+        src/utils.cpp
 )
 
 target_include_directories(${LIB_NAME} PUBLIC

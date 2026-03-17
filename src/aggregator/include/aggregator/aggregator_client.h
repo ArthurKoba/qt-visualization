@@ -48,6 +48,7 @@ protected:
     QHostAddress _aggregator_server_address = QHostAddress::LocalHost;
     uint16_t _aggregator_server_port = aggregator_component::DEFAULT_PORT;
     bool _is_registered = false;
+    session_token_t _session_token = 0; // токен сессии, генерируемый клиентом
     std::optional<int32_t> _reconnect_tries;
     int32_t _current_reconnect_attempt = 0;
     QTimer _reconnect_timer;
