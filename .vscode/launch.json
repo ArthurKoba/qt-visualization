@@ -2,22 +2,98 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Run (No Debugger)",
+      "name": "Debug qt-application",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/cmake-build-debug/src/qt-application.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}/cmake-build-debug/src",
+      "environment": [
+        {
+          "name": "PATH",
+          "value": "C:/Qt/6.9.2/mingw_64/bin;C:/Program Files/JetBrains/CLion 2024.3.4/bin/ninja/win/x64/;${env:PATH}"
+        },
+        {
+          "name": "QSG_RHI_BACKEND",
+          "value": "opengl"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/Program Files/JetBrains/CLion 2024.3.4/bin/gdb/win/x64/bin/gdb.exe",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "cmake: build qt-application"
+    },
+    {
+      "name": "Run qt-application (No Debugger)",
       "type": "node-terminal",
       "request": "launch",
       "command": "${workspaceRoot}/cmake-build-debug/src/qt-application.exe",
       "cwd": "${workspaceRoot}/cmake-build-debug/src",
       "env": {
-        "PATH": "C:/Qt/6.9.2/mingw_64/bin;${env:PATH}"
+        "PATH": "C:/Qt/6.9.2/mingw_64/bin;${env:PATH}",
+        "QSG_RHI_BACKEND": "opengl"
       },
-      "preLaunchTask": "cmake: build"
+      "preLaunchTask": "cmake: build qt-application"
     },
     {
-      "name": "Debug (With Debugger)",
+      "name": "Debug aggregator server",
       "type": "cppdbg",
       "request": "launch",
-      "program": "integratedTerminal",
-      "preLaunchTask": "cmake: build"
+      "program": "${workspaceRoot}/cmake-build-debug/src/aggregator/aggregator_server_app.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}/cmake-build-debug/src/aggregator",
+      "environment": [
+        {
+          "name": "PATH",
+          "value": "C:/Qt/6.9.2/mingw_64/bin;${env:PATH}"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/Qt/6.9.2/mingw_64/bin/gdb.exe",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "cmake: build aggregator server"
+    },
+    {
+      "name": "Debug aggregator client",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceRoot}/cmake-build-debug/src/aggregator/aggregator_client_app.exe",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceRoot}/cmake-build-debug/src/aggregator",
+      "environment": [
+        {
+          "name": "PATH",
+          "value": "C:/Qt/6.9.2/mingw_64/bin;${env:PATH}"
+        }
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "miDebuggerPath": "C:/Qt/6.9.2/mingw_64/bin/gdb.exe",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "cmake: build aggregator client"
     }
   ]
 }

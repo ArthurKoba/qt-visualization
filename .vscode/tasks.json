@@ -13,9 +13,60 @@
       "label": "cmake: build",
       "type": "cmake",
       "command": "build",
-      "group": "build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
       "problemMatcher": [],
       "detail": "Build the project with CMake"
+    },
+    {
+      "label": "cmake: build qt-application",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", ".", "--target", "qt-application"],
+      "options": {
+        "cwd": "${workspaceRoot}/cmake-build-debug"
+      },
+      "group": "build",
+      "problemMatcher": ["$gcc"],
+      "detail": "Build main application target"
+    },
+    {
+      "label": "cmake: build aggregator server",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", ".", "--target", "aggregator_server_app"],
+      "options": {
+        "cwd": "${workspaceRoot}/cmake-build-debug"
+      },
+      "group": "build",
+      "problemMatcher": ["$gcc"],
+      "detail": "Build aggregator server target"
+    },
+    {
+      "label": "cmake: build aggregator client",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", ".", "--target", "aggregator_client_app"],
+      "options": {
+        "cwd": "${workspaceRoot}/cmake-build-debug"
+      },
+      "group": "build",
+      "problemMatcher": ["$gcc"],
+      "detail": "Build aggregator client target"
+    },
+    {
+      "label": "cmake: build aggregator",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", ".", "--target", "aggregator_server_app", "--target", "aggregator_client_app"],
+      "options": {
+        "cwd": "${workspaceRoot}/cmake-build-debug"
+      },
+      "group": "build",
+      "problemMatcher": ["$gcc"],
+      "detail": "Build both aggregator server and client targets"
     },
     {
       "label": "cmake: clean",
