@@ -1,6 +1,7 @@
 ---
-inclusion: always
-fileMatchPattern: '**/*.cpp,**/*.h,**/*.hpp'
+inclusion: fileMatch
+fileMatchPattern: '**/*.cpp,**/*.h'
+description: "Стандарты кодирования C++: типы данных с явной размерностью, соглашения об именовании, члены класса с префиксами доступа, модификатор final, явные касты, ISO646 операторы, комментарии Doxygen, система логирования Qt. Подключать при написании и редактировании C++ кода для соблюдения стиля проекта."
 ---
 
 # C++ Стандарты кодирования
@@ -14,6 +15,18 @@ fileMatchPattern: '**/*.cpp,**/*.h,**/*.hpp'
 - Целевая платформа: Windows (win32)
 - Версия Qt 6.10.2
 - Не используй реализации на основе QT QML, лучше все делать нативно в стиле С++.
+
+## Системные импорты
+
+### **Порядок**
+1. В начале списка должны следовать системные импорты из предустановленных библиотек, в частности речь о std.
+2. Второй блок списка должен содержать импорты модулей Qt, основного фремворка данного проекта.
+3. Третий блок должен включать все внешние библиотеки, не являющиеся файлами проекта.
+4. В последнем блоке списка должны располагаться импорты файлов проекта в кавычках `#include "module.h"`
+### **Примечания**
+- Каждый блок импортов должен быть разделен от других блоков пробелом.
+- Внутри каждого блока импортов строки должны располагаться без дополнительных пустых строк.
+- Внешние импорты должны использовать фигурные символы <>, а внутренние (файлы проекта) кавычки.
 
 ## Типы данных
 
@@ -36,7 +49,7 @@ delete _reconnect_tries;
 **Принцип:** Все типы данных должны иметь явно определенную размерность.
 
 **Правило:**
-- **НИКОГДА не используй** `int`, `unsigned int` и подобные неявные, архитектурнозависимые типы
+- **НИКОГДА не используй** `int`, `unsigned int` и подобные неявные, архитектурно-зависимые типы
 - **ВСЕГДА используй** типы с понятной размерностью: `uint8_t`, `int32_t`, `uint64_t` и т.д.
 
 **Пример:**
@@ -126,50 +139,20 @@ class DataProcessor { };     // класс внутри файла
 **Принцип:** Члены класса должны иметь префиксы, которые явно указывают на уровень доступа.
 
 **Правило:**
-- **Приватные и защищенные поля и методы** — начинать с префикса `_` (одиночное  подчеркивание)
+- **Приватные и защищенные поля и методы** — начинать с префикса `_` (одиночное подчеркивание)
 - **Публичные члены** — без префиксов, используется обычный snake_case
 
 ### Организация членов класса
 
 **Порядок в определении класса:**
-1. Публичные поля (если есть)
-2. Публичные методы
-3. Защищенные поля
-4. Приватные поля
-5. Приватные методы
-6. Защищенные методы
+1. Публичные поля и методы
+2. Защищенные поля и методы
+3. Приватные поля и методы
+4. Сначала лучше размещать общие для класса поля, а потом методы.
+5. Если поле используется только в одном или нескольких методах, его лучше разместить рядом с ними для читаемости, но самое главное чтобы он был определен выше самого первого метода который его использует.
 
 
 ### Хороший пример реализации (порядки определения, именования, инкапсуляция)
-
-```cpp
-class DataProcessor final {
-public: // Публичные поля (редко)
-    static const int32_t MAX_BUFFER_SIZE = 1024;
-public: // Публичные методы
-    void process_data(const QByteArray& data);
-    QString get_status() const;
-    bool is_connected() const;
-
-protected: // Защищенные поля
-    QVector<uint8_t> _cache;
-    bool _is_initialized;
-    int32_t _retry_count;
-private: // Приватные поля
-    
-    int32_t _buffer_size;
-    QString _internal_state;
-    QVector<uint8_t> _cache;
-protected:// Приватные методы
-    void _notify_socket_observers();
-    void _on_server_state_changed() override;
-    void _reset_clietn_state(Client *client);
-private:  // Приватные методы
-    void _validate_input();
-    bool _process_internal_data() override;
-    void _cleanup_resources();
-};
-```
 
 ## Модификатор final
 
@@ -185,23 +168,92 @@ private:  // Приватные методы
 **Пример:**
 
 ```cpp
-// Абстрактный базовый класс - БЕЗ final
-class EventHandler {
+#include <QObject>
+#include <QNetworkReply>
+#include <QTimer>
+#include <QString>
+#include <QMap>
+
+// Интерфейс — БЕЗ final
+class INetworkEventHandler {
 public:
-    virtual ~EventHandler() = default;
-    virtual void handle_event(const event_t& event) = 0;
+    virtual ~INetworkEventHandler() = default;
+
+    virtual void handle_event(const QNetworkReply* reply) = 0;
+    virtual void handle_error(const QNetworkReply::NetworkError& error) = 0;
 };
 
-// Конкретная реализация - С final
-class NetworkEventHandler final : public EventHandler {
+
+// Абстрактный класс — БЕЗ final
+class AbstractNetworkEventHandler : public QObject, public INetworkEventHandler {
+    Q_OBJECT
+
 public:
-    void handle_event(const event_t& event) override;
+    explicit AbstractNetworkEventHandler(QObject* parent = nullptr);
+    ~AbstractNetworkEventHandler() override = default;
+
+    // Общее для класса поле — максимальное число попыток
+    int max_retry_count;
+
+    void handle_event(const QNetworkReply* reply) override;
+    void handle_error(const QNetworkReply::NetworkError& error) final;
+
+protected:
+    // Общие защищённые поля
+    QString _base_url;
+    int     _retry_count;
+
+    // Метод и поле, используемое только в retry-логике — рядом друг с другом
+    QTimer* _retry_timer;
+    virtual void _schedule_retry();
+
+    virtual void _process_reply(const QNetworkReply* reply) = 0;
+
+private:
+    // Поле используется только в _log_error()
+    QString _last_error_message;
+    void    _log_error(const QString& message);
 };
 
-// Еще одна конкретная реализация - С final
-class FileEventHandler final : public EventHandler {
+
+// Конкретная реализация — С final
+class BDSPNetworkEventHandler final : public AbstractNetworkEventHandler {
+    Q_OBJECT
+
 public:
-    void handle_event(const event_t& event) override;
+    explicit BDSPNetworkEventHandler(const QString& endpoint, QObject* parent = nullptr);
+    ~BDSPNetworkEventHandler() override = default;
+
+    // Публичное поле + метод управления endpoint-ом
+    QString active_endpoint;
+
+    void handle_event(const QNetworkReply* reply) override;
+
+    void        set_timeout(int milliseconds);
+    int         get_timeout() const;
+    bool        is_connected() const;
+
+signals:
+    void event_processed(const QString& response_data);
+    void connection_lost();
+
+protected:
+    void _schedule_retry() override;
+    void _process_reply(const QNetworkReply* reply) override;
+
+private:
+    // Общие приватные поля
+    bool _is_connected;
+
+    // Поле и методы timeout-логики — сгруппированы рядом
+    int     _timeout_ms;
+    QTimer* _timeout_timer;
+    void    _start_timeout_timer();
+    void    _stop_timeout_timer();
+
+    // Поле и метод парсинга — сгруппированы рядом
+    QMap<QString, QString> _response_cache;
+    QString                _parse_response(const QByteArray& raw_data);
 };
 ```
 
@@ -274,9 +326,12 @@ uint32_t inverted = compl value;
 
 ### Стиль комментариев
 
-- Добавляй комментарии для сложной логики
+- Добавляй комментарии к коду для очень сложной и неочевидной логики.
+- Не пиши комментарии к коду равные по смыслу последующему действию программы. 
+  Например, "добавляю модуль X" перед `add_subdirectory(X)`, это очевидно из действия программы. 
+  Другим плохим примером будет комментарий `// запускаем сервер`, а далее следует `aggregate_server.start()`
 - Оформление комментариев должно быть **СТРОГО в стиле Doxygen**
-- Не пиши бесполезные комментарии (например, "добавляю модуль X" перед `add_subdirectory(X)`)
+
 
 **Пример:**
 
@@ -312,6 +367,7 @@ class DataProcessor final {
 - Названия категорий следуют соглашению: `module.submodule.component` (например: `aggregator.server.event_handler`)
 - Для QString используй `qPrintable()` для преобразования в const char*
 - Для QUuid используй `qPrintable(uuid.toString())`
+- **Для настройки и управления логированием** используй документацию: `#[[file:.kiro/steering/qt/qt-logging.md]]`
 
 **Разделение логирования по этапам запуска:**
 1. **Этап инициализации и парсинга параметров (до успешного запуска) - БЕЗ категорий:**
@@ -356,9 +412,9 @@ qCInfo(module_server, "Event received: %d for component: %s",
 ### Проверки перед коммитом
 
 - Убедись, что в изменённых файлах нет синтаксических ошибок и приложение собирается
+- ДЛЯ БИЛДА КАК ПРАВИЛО ИСПОЛЬЗУЕТСЯ КОМАНДА cmake --build cmake-build-debug --target ...
 - Проверь возможные утечки памяти
 - Убедись, что все логи используют систему логирования Qt, а не прямой вывод в консоль
 - Проверь, что все классы-реализации имеют модификатор `final`
 - Убедись, что все члены класса имеют правильные префиксы доступа
 - Убедитесь, что все логи используют систему логирования Qt, а не прямой вывод в консоль
-

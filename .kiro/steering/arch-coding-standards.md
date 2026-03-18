@@ -1,6 +1,7 @@
 ---
-inclusion: always
-fileMatchPattern: '**/*.cpp,**/*.h,**/*.hpp'
+inclusion: fileMatch
+fileMatchPattern: '**/CMakeLists.txt'
+description: "Архитектурные стандарты и CMake: структура файлов (include/src разделение), Header Guards, соответствие структуры папок, организация типов в abstract/, иерархия интерфейсов, миксины, стандарты оформления CMakeLists.txt. Подключать при создании новых модулей, редактировании CMakeLists.txt, организации структуры проекта, решении проблем сборки приложения."
 ---
 
 # Стандарты Архитектуры
@@ -163,3 +164,92 @@ class FFTProcessor : public IDataProcessor,
     // Наследует функциональность логирования и сбора метрик
 };
 ```
+
+# Стандарты оформления CMake-модулей
+
+## Обзор
+
+Этот документ определяет правила оформления `CMakeLists.txt` для библиотек и исполняемых файлов проекта.
+
+---
+
+## Структура модуля-библиотеки (эталон: `src/aggregator/`)
+
+```cmake
+cmake_minimum_required(VERSION 3.30)
+
+set(LIB_NAME "my-library")
+project(${LIB_NAME})
+
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_AUTOMOC ON)
+
+find_package(Qt6 REQUIRED COMPONENTS Core Network)
+
+# Создание библиотеки (shared/static управляется BUILD_SHARED_LIBS)
+if (BUILD_SHARED_LIBS)
+    add_library(${LIB_NAME} SHARED)
+else ()
+    add_library(${LIB_NAME})
+endif ()
+
+# Источники: заголовки PUBLIC, реализации PRIVATE
+target_sources(${LIB_NAME} PUBLIC
+    include/my_module/abstract/types.h
+    include/my_module/abstract/interfaces.h
+    include/my_module/my_class.h
+)
+
+target_sources(${LIB_NAME} PRIVATE
+        src/my_class.cpp
+)
+
+# Публичный include — только папка include/
+target_include_directories(${LIB_NAME} PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+# Линковка
+target_link_libraries(${LIB_NAME} PUBLIC
+        Qt6::Core
+        Qt6::Network
+)
+```
+
+## Структура модуля с точкой входа (исполняемый файл)
+
+```cmake
+# Исполняемый файл точки входа
+add_executable(my_app src/main.cpp)
+target_link_libraries(my_app PRIVATE ${LIB_NAME})
+```
+
+## Правила оформления
+
+1. **`cmake_minimum_required`** — всегда первая строка в корневом и модульных файлах
+2. **`set(LIB_NAME ...)`** — имя цели задаётся через переменную, не хардкодится
+3. **`CMAKE_CXX_STANDARD 23`** — стандарт C++ задаётся в каждом модуле явно
+4. **`CMAKE_AUTOMOC ON`** — обязательно для Qt-модулей с сигналами/слотами
+5. **`find_package`** — только те компоненты Qt, которые реально используются в модуле
+6. **`target_sources` PUBLIC/PRIVATE** — заголовки PUBLIC (видны потребителям), реализации PRIVATE
+7. **`target_include_directories` PUBLIC** — только `include/`, не `include/module_name/`
+8. **`target_link_libraries`** — PUBLIC для зависимостей, которые нужны потребителям; PRIVATE для внутренних
+
+## Что НЕ делать
+
+```cmake
+# НЕПРАВИЛЬНО — include_directories вместо target_include_directories
+include_directories(include)
+
+# НЕПРАВИЛЬНО — link_libraries вместо target_link_libraries
+link_libraries(Qt6::Core)
+```
+
+## Типичные ошибки
+
+**Линковщик не находит символы** (`undefined reference to ...` / `unresolved external symbol`):
+- Причина: зависимость не добавлена в `target_link_libraries`
+- Решение: добавить недостающую библиотеку в `target_link_libraries(my_app PRIVATE missing_library)`
+
+**Заголовок не найден** (`fatal error: my_module/my_class.h: No such file or directory`):
+- Причина: не добавлена папка `include` в `target_include_directories` или библиотека не подключена

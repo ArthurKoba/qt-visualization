@@ -1,6 +1,8 @@
 ---
 inclusion: always
+description: "Архитектурная карта проекта: описание всех компонентов системы (core_app, aggregator, analyzer, audio, charts, core), их взаимодействие, система сборки, внешние библиотеки. Подключать при работе с архитектурой, добавлении новых компонентов, настройки взаимодействия модулей. Обазательно дополнять и обновлять при добавлении и адалении функционала системы."
 ---
+
 # Карта проекта
 
 ## Обзор
@@ -10,7 +12,83 @@ inclusion: always
 
 ### Основные компоненты
 
-#### 0. Сервер агрегации (`src/aggregator/`)
+#### 0. Ядро приложения управления (`src/core_app/`)
+
+**Назначение:** GUI приложение для управления и мониторинга компонентов системы обработки данных. Предоставляет визуальный интерфейс для отслеживания состояния всех компонентов архитектуры конвейера обработки данных.
+
+**Основной класс: `CoreApplication`** (наследуется от `QApplication`)
+- Инициализация Qt приложения с поддержкой аргументов командной строки
+- Создание и управление главным окном приложения
+- Настройка системы логирования Qt с категориями
+- Поддержка режимов запуска (с отладкой и без)
+
+**Главное окно: `MainWindow`** (наследуется от `QMainWindow`)
+- Вкладка "Block Diagram Editor" — редактор блок-схем с нодами компонентов (первая вкладка)
+- Вкладка "System Components" для отображения карточек компонентов
+- Синхронизация обеих вкладок: добавление/обновление/удаление компонентов отражается в обоих представлениях
+- Управление коллекцией карточек компонентов по UUID
+
+**Редактор блок-схем: `DiagramEditorWidget`** (наследуется от `QWidget`)
+- Построен на базе библиотеки QtNodes (paceholder/nodeeditor)
+- Отображает компоненты системы в виде нод с информацией о типе и состоянии
+- Логирует создание и удаление связей между нодами в категорию `core_app.diagram_editor`
+- Синхронизируется с `MainWindow` через методы `add_component_node`, `update_component_node`, `remove_component_node`, `clear_nodes`
+- При обновлении компонента с изменением типа автоматически сбрасывает все его связи
+- Пробрасывает сигнал `component_renamed` из нод наружу в `MainWindow`
+
+**Нода компонента: `ComponentNodeModel`** (наследуется от `QtNodes::NodeDelegateModel`)
+- Отображает имя, тип и состояние компонента с цветовой индикацией
+- Порты: `data_source` — только выход; `data_sink` — только вход; `data_processor`/`core` — вход и выход
+- Тип данных порта: `ComponentNodeData` (обёртка над `component_display_info_t`)
+- Двойной клик по имени компонента в ноде запускает inline-переименование (QLineEdit поверх метки)
+- Сигнал `component_renamed(uuid, new_name)` пробрасывается через `DiagramEditorWidget` в `MainWindow` для синхронизации с карточкой
+
+**Карточка компонента: `ComponentCardWidget`** (наследуется от `QFrame`)
+- Отображение UUID, типа, адреса, порта, состояния компонента
+- Цветовые индикаторы состояния с анимацией мигания
+- Поддержка обновления информации о компоненте в реальном времени
+
+**Цветовые индикаторы состояний:**
+- 🔴 Красный - Offline (компонент отключен)
+- 🟠 Оранжевый - Disconnected (временно отключен, мигает)
+- 🟡 Желтый - Registered (зарегистрирован)
+- 🔵 Голубой - Inactive (неактивен)
+- 🟢 Зеленый - Idle (готов к работе)
+- 🟢 Ярко-зеленый - Active (активно работает, мигает)
+- ⚫ Серый - Unknown (неизвестное состояние)
+
+**Файлы:**
+- `include/core_app/core_application.h` / `src/core_application.cpp` — основное приложение
+- `include/core_app/main_window.h` / `src/main_window.cpp` — главное окно с вкладками
+- `include/core_app/component_card_widget.h` / `src/component_card_widget.cpp` — карточка компонента
+- `include/core_app/component_node_model.h` / `src/component_node_model.cpp` — нода компонента для редактора
+- `include/core_app/diagram_editor_widget.h` / `src/diagram_editor_widget.cpp` — виджет редактора блок-схем
+- `include/core_app/abstract/types.h` — типы данных для UI: `component_display_info_t`, `StatusColor`
+- `src/main.cpp` — точка входа приложения
+- `README.md` — документация модуля
+
+**Тестовые данные:**
+Приложение автоматически генерирует 6 тестовых компонентов:
+- Signal Generator (Data Source, Active) - порт 8001
+- WASAPI Loopback (Data Source, Idle) - порт 8002
+- FFT Processor (Data Processor, Active) - порт 8003
+- Spectral Normalizer (Data Processor, Inactive) - порт 8004
+- Chart Visualizer (Data Sink, Disconnected) - порт 8005
+- Data Recorder (Data Sink, Offline) - порт 8006
+
+**Система логирования:**
+- `core_app.main` — основные события приложения
+- `core_app.window` — события главного окна
+- `core_app.card` — события карточек компонентов
+- `core_app.node_model` — события нод компонентов
+- `core_app.diagram_editor` — события редактора блок-схем (создание/удаление связей)
+
+**Аргументы командной строки:**
+- `--help` — показать справку
+- `--version` — показать версию
+- `-d, --debug` — включить отладочный вывод
+
+#### 1. Сервер агрегации (`src/aggregator/`)
 
 **Назначение:** Центральный компонент системы для отслеживания доступности и состояния всех компонентов архитектуры конвейера обработки данных. Использует протокол BDSP для надежной передачи пакетов.
 
@@ -47,12 +125,12 @@ inclusion: always
 
 
 
-#### 1. Точка входа в приложение (`src/main.cpp`)
+#### 2. Точка входа в приложение (`src/main.cpp`)
 - Создает `Application` (наследуется от `QApplication`)
 - Инициализирует `SurfaceGraph` для 3D визуализации
 - Использует Qt6 с OpenGL бэкендом (`QSG_RHI_BACKEND=opengl`)
 
-#### 2. Основное приложение (`src/app.h/cpp`)
+#### 3. Основное приложение (`src/app.h/cpp`)
 **Структура Config** — переключение компонентов визуализации:
 - `run_loopback` — захват системного аудио
 - `run_serial` — обработка данных по последовательному порту от микроконтроллера
@@ -77,7 +155,7 @@ inclusion: always
 3. Обработчик обновления отправляет данные в графики и спектрограмму
 4. Спектрограмма обновляет 3D поверхность
 
-#### 3. Анализатор (`src/analyzer/`)
+#### 4. Анализатор (`src/analyzer/`)
 **Основной класс: `Analyzer`** (наследуется от `AbstractTask`, `final`)
 - Запускается в выделенном потоке (целевая частота кадров — 1000/45 FPS)
 - Использует ESP-DSP для FFT (FFT2R/FFT4R/FHT2R/FHT4R)
@@ -109,7 +187,7 @@ inclusion: always
 - `spectrogram.h/cpp` — структура данных спектрограммы
 - `generator/generator.h/cpp` — генератор синусоиды
 
-#### 4. Аудио loopback (`src/audio/`)
+#### 5. Аудио loopback (`src/audio/`)
 **Реализация для Windows: `WASAPILoopback`**
 - Использует захват loopback в общем режиме WASAPI
 - Захватывает вывод устройства по умолчанию
@@ -133,7 +211,7 @@ class IAudioLoopback { ... };  // set_audio_handler(), start(), stop()
 - `factory.cpp` — реализация фабрики
 - `windows_loopback.h/cpp` — реализация `WASAPILoopback`
 
-#### 5. Графики (`src/charts/`)
+#### 6. Графики (`src/charts/`)
 Все графики наследуются от `AbstractChartView` (расширяет `QChartView`):
 
 **Базовые возможности:**
@@ -161,7 +239,7 @@ class IAudioLoopback { ... };  // set_audio_handler(), start(), stop()
 Для загрузки полной документации по Qt Charts используй: `#[[file:.kiro/steering/qt/qt-charts.md]]`
 
 
-#### 6. Ядро утилит (`src/core/`)
+#### 7. Ядро утилит (`src/core/`)
 
 **`AbstractTask`** — управление потоками:
 - Создание потоков, специфичное для Windows (`CreateThread`)
@@ -186,7 +264,7 @@ class IAudioLoopback { ... };  // set_audio_handler(), start(), stop()
 - `include/core/abs_task.h` / `src/abs_task.cpp`
 - `include/core/utils.h` / `src/utils.cpp`
 
-#### 7. 3D визуализация (`src/surfacegraph.h/cpp`, `src/surfacegraphmodifier.h/cpp`)
+#### 8. 3D визуализация (`src/surfacegraph.h/cpp`, `src/surfacegraphmodifier.h/cpp`)
 **`SurfaceGraph`** — обертка Qt Data Visualization:
 - `Q3DSurface` для 3D поверхностных графиков
 - `SurfaceGraphModifier` для взаимодействия
@@ -202,6 +280,15 @@ class IAudioLoopback { ... };  // set_audio_handler(), start(), stop()
 
 ## Система сборки
 
+### Цели сборки проекта
+
+| Цель | Описание |
+|------|----------|
+| `qt-application` | Основное legacy приложение |
+| `core_app` | GUI приложение управления компонентами |
+| `aggregator_server_app` | Сервер агрегации |
+| `aggregator_client_app` | Клиент агрегации |
+
 **Структура CMakeLists.txt:**
 ```
 qt-visualization/
@@ -213,16 +300,20 @@ qt-visualization/
 │   ├── audio/CMakeLists.txt
 │   ├── charts/CMakeLists.txt
 │   ├── core/CMakeLists.txt
+│   ├── core_app/CMakeLists.txt
 │   └── analyzer/generator/CMakeLists.txt
 ```
 
 **Зависимости:**
-- Qt6: Charts, Core, Gui, Multimedia, SerialPort, DataVisualization
+- Qt6: Charts, Core, Gui, Multimedia, SerialPort, DataVisualization, Network, Widgets
 - BDSP (через FetchContent).
 
 **Цели сборки:**
-- `qt-application` — основной исполняемый файл
-- `aggregator` — сервер и клиент агрегации
+- `qt-application` — основной исполняемый файл (legacy)
+- `core_app` — GUI приложение управления компонентами
+- `aggregator-library` — библиотека сервера агрегации
+- `aggregator_server_app` — исполняемый файл сервера агрегации
+- `aggregator_client_app` — исполняемый файл клиента агрегации
 - `analyzer` — статическая/разделяемая библиотека
 - `audio` — платформо-специфичный захват аудио
 - `charts` — библиотека визуализации графиков
@@ -276,6 +367,13 @@ bool show_surface = true;
   - Изначально разработана для последовательного порта, однако её можно адаптировать под любые каналы связи, в том числе TCP/IP, UDP, CAN, I2C, SPI
   - В проекте используется для надежной передачи пакетов между сервером агрегации и клиентами
   - Основные классы: `COBSZPETransceiver` (трансивер с COBS кодированием и Zero Padding Elimination)
+
+- **QtNodes**: https://github.com/paceholder/nodeeditor
+  - Библиотека для создания визуальных редакторов нод и граф-схем на Qt
+  - Используется в `core_app` для редактора блок-схем компонентов
+  - Подключается через FetchContent (`src/CMakeLists.txt`), цель: `QtNodes::QtNodes`
+  - Ключевые классы: `DataFlowGraphModel`, `DataFlowGraphicsScene`, `GraphicsView`, `NodeDelegateModel`, `NodeDelegateModelRegistry`
+  - Сигналы связей: `AbstractGraphModel::connectionCreated`, `AbstractGraphModel::connectionDeleted`
 
 - **ESP-DSP**:  https://github.com/espressif/esp-dsp/
   - Оптимизирована для микроконтроллеров ESP32

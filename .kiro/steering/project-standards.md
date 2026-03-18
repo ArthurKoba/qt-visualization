@@ -1,3 +1,8 @@
+---
+inclusion: always
+description: "Общие стандарты проекта: правила поиска в интернете перед решением проблем, работа с Qt документацией, команды сборки CMake, утилиты Windows. Подключать при любых вопросах о стандартах, сборке и документации по данному проекта."
+---
+
 # Стандарты проекта
 
 ## Обзор
@@ -75,10 +80,89 @@
 2. Загружается: `#[[file:.kiro/steering/qt/qt-multimedia.md]]` (через явную ссылку)
 3. Загружается: `project-map.md` (если нужна архитектура)
 
+## Сборка проекта
+
+### Основная команда сборки
+
+```powershell
+cmake --build cmake-build-debug --target <target_name> -- -j16 2>&1 | Where-Object { $_ -match "error:|warning:|FAILED|Error|Warning" } | Where-Object { $_ -notmatch "^\[\s*\d+%\]" }
+```
+
+**Правила:**
+- **ВСЕГДА** указывай конкретный `--target`, не собирай весь проект без необходимости
+- **ВСЕГДА** фильтруй вывод — строки прогресса `[X%]` засоряют контекст
+- Используй `-j16` для параллельной сборки
+- Директория сборки: `cmake-build-debug` (относительно корня проекта)
+
+Если нужен полный вывод (при отладке системы сборки):
+```powershell
+cmake --build cmake-build-debug --target core_app -- -j16
+```
+
+
+
+### Пересборка и очистка
+
+```powershell
+# Пересборка конкретной цели
+cmake --build cmake-build-debug --target core_app -- -j16 2>&1 | Where-Object { $_ -match "error:|warning:|FAILED" }
+
+# Полная очистка и перегенерация (крайний случай)
+Remove-Item -Recurse -Force cmake-build-debug
+cmake -B cmake-build-debug -DCMAKE_BUILD_TYPE=Debug
+cmake --build cmake-build-debug --target core_app -- -j16 2>&1 | Where-Object { $_ -match "error:|warning:|FAILED" }
+```
+
+Полную очистку делай только если:
+- Изменилась структура CMakeLists.txt
+- Добавлены новые зависимости через FetchContent
+- Инкрементальная сборка даёт странные ошибки, не связанные с кодом
+
+## Утилиты Windows
+
+**НИКОГДА не используй** bash/Linux-утилиты (`ls`, `find`, `grep`, `cat`, `mkdir`, `cp`, `rm`) в shell-командах на Windows.
+
+### Предпочтительный порядок
+
+1. **Инструменты агента** (`listDirectory`, `readFile`, `grepSearch`, `fileSearch`) — в первую очередь
+2. **PowerShell** — если нужно выполнить команду в shell
+
+### PowerShell эквиваленты
+
+| Задача | PowerShell команда |
+|--------|-------------------|
+| Список файлов | `Get-ChildItem -Path <dir>` |
+| Рекурсивный список | `Get-ChildItem -Recurse -Path <dir>` |
+| Поиск файлов | `Get-ChildItem -Recurse -Filter "*.dll"` |
+| Чтение файла | `Get-Content <file>` |
+| Копирование файла | `Copy-Item <src> <dst>` |
+| Копирование директории | `Copy-Item -Recurse <src> <dst>` |
+| Создание директории | `New-Item -ItemType Directory -Path <dir>` |
+| Удаление файла | `Remove-Item <file>` |
+| Удаление директории | `Remove-Item -Recurse -Force <dir>` |
+| Поиск текста в файлах | `Select-String -Path "*.cpp" -Pattern "error"` |
+| Проверка существования | `Test-Path <path>` |
+| Фильтрация вывода | `<команда> \| Where-Object { $_ -match "паттерн" }` |
+| Исключение из вывода | `<команда> \| Where-Object { $_ -notmatch "паттерн" }` |
+
+Разделитель команд в PowerShell — `;` (не `&&`).
+
+### Диагностика после сборки
+
+```powershell
+# Проверка наличия исполняемого файла
+Test-Path cmake-build-debug/bin/core_app.exe
+
+# Список DLL рядом с исполняемым файлом
+Get-ChildItem -Path cmake-build-debug/bin/ -Filter "*.dll" | Select-Object Name
+```
+
+## Ссылки на документацию
+
 ## Ссылки на документацию
 
 - [README.MD проекта](/README.MD)
 - [Карта проекта](.kiro/steering/project-map.md) - `#[[file:.kiro/steering/project-map.md]]`
 - [Архитектурные стандарты](.kiro/steering/arch-coding-standards.md) - `#[[file:.kiro/steering/arch-coding-standards.md]]`
 - [C++ стандарты кодирования](.kiro/steering/cpp-coding-standards.md) - `#[[file:.kiro/steering/cpp-coding-standards.md]]`
-- [Qt документация и примеры](.kiro/steering/qt/README.md) - `#[[file:.kiro/steering/qt/README.md]]`
+- [Qt документация и примеры](.

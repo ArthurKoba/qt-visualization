@@ -1,6 +1,7 @@
 ---
 inclusion: fileMatch
 fileMatchPattern: "**/*.h,**/*.cpp,**/*.ui"
+description: "Qt Development Guide: быстрые ссылки на документацию и примеры всех модулей Qt 6.10, индекс модулей (Core, GUI, Widgets, Network, Multimedia, Graphs, Charts, Serial Port, Concurrent, SQL, Logging), рекомендации по выбору модулей. Подключать при работе с Qt компонентами, поиске примеров использования модулей, разработке новых методов, алгоритмов, компонентов."
 ---
 
 # Qt Development Guide
@@ -41,8 +42,3 @@ fileMatchPattern: "**/*.h,**/*.cpp,**/*.ui"
 - [Qt 6.10 Modules](https://doc.qt.io/qt-6/modules.html)
 - [Qt 6.10 Examples](https://doc.qt.io/qt-6/examples.html)
 
-## Стандарты кодирования
-
-- C++ стандарты: `#[[file:.kiro/steering/cpp-coding-standards.md]]`
-- Архитектурные стандарты: `#[[file:.kiro/steering/arch-coding-standards.md]]`
-- Карта проекта: `#[[file:.kiro/steering/project-map.md]]`
