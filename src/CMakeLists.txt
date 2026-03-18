@@ -8,6 +8,8 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 
+find_package(Qt6 REQUIRED COMPONENTS Charts Core Gui Multimedia SerialPort DataVisualization Network)
+
 add_executable(${APP_NAME} main.cpp)
 target_sources(${APP_NAME} PRIVATE
         app.h app.cpp
@@ -55,32 +57,4 @@ target_link_libraries(${APP_NAME} PUBLIC
         ${APP_PROJECT_LIBS}
 )
 
-if (BUILD_SHARED_LIBS)
-    set(LIB_FILES "")
-    foreach(lib IN LISTS APP_PROJECT_LIBS)
-        list(APPEND LIB_FILES "$<TARGET_FILE:${lib}>")
-    endforeach()
-
-    list(APPEND LIB_FILES "$<TARGET_FILE:BDSP>")
-
-    add_custom_command(
-            TARGET ${APP_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            ${LIB_FILES}
-            "$<TARGET_FILE_DIR:${APP_NAME}>"
-    )
-endif ()
-
-
-#if(WIN32)
-#    find_program(WINDEPLOYQT windeployqt HINTS "${Qt6_DIR}/../../../bin")
-#    if(WINDEPLOYQT)
-#        add_custom_command(TARGET ${APP_NAME} POST_BUILD
-#                COMMAND "${WINDEPLOYQT}"
-#                --qmldir "${CMAKE_SOURCE_DIR}"
-#                "$<TARGET_FILE:${APP_NAME}>"
-#                COMMENT "Running windeployqt..."
-#        )
-#    endif()
-#endif()
 

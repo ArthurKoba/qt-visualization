@@ -12,7 +12,7 @@
       "environment": [
         {
           "name": "PATH",
-          "value": "C:/Qt/6.9.2/mingw_64/bin;C:/Program Files/JetBrains/CLion 2024.3.4/bin/ninja/win/x64/;${env:PATH}"
+          "value": "C:/Qt/6.10.2/mingw_64/bin;C:/Program Files/JetBrains/CLion 2024.3.4/bin/ninja/win/x64/;${env:PATH}"
         },
         {
           "name": "QSG_RHI_BACKEND",
@@ -38,7 +38,7 @@
       "command": "${workspaceRoot}/cmake-build-debug/src/qt-application.exe",
       "cwd": "${workspaceRoot}/cmake-build-debug/src",
       "env": {
-        "PATH": "C:/Qt/6.9.2/mingw_64/bin;${env:PATH}",
+        "PATH": "C:/Qt/6.10.2/mingw_64/bin;${env:PATH}",
         "QSG_RHI_BACKEND": "opengl"
       },
       "preLaunchTask": "cmake: build qt-application"
@@ -54,12 +54,12 @@
       "environment": [
         {
           "name": "PATH",
-          "value": "C:/Qt/6.9.2/mingw_64/bin;${env:PATH}"
+          "value": "C:/Qt/6.10.2/mingw_64/bin;${env:PATH}"
         }
       ],
       "externalConsole": false,
       "MIMode": "gdb",
-      "miDebuggerPath": "C:/Qt/6.9.2/mingw_64/bin/gdb.exe",
+      "miDebuggerPath": "C:/Qt/6.10.2/mingw_64/bin/gdb.exe",
       "setupCommands": [
         {
           "description": "Enable pretty-printing for gdb",
@@ -80,12 +80,12 @@
       "environment": [
         {
           "name": "PATH",
-          "value": "C:/Qt/6.9.2/mingw_64/bin;${env:PATH}"
+          "value": "C:/Qt/6.10.2/mingw_64/bin;${env:PATH}"
         }
       ],
       "externalConsole": false,
       "MIMode": "gdb",
-      "miDebuggerPath": "C:/Qt/6.9.2/mingw_64/bin/gdb.exe",
+      "miDebuggerPath": "C:/Qt/6.10.2/mingw_64/bin/gdb.exe",
       "setupCommands": [
         {
           "description": "Enable pretty-printing for gdb",

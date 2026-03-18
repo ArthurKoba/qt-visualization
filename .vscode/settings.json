@@ -6,7 +6,7 @@
   "cmake.configureArgs": [
     "-DCMAKE_BUILD_TYPE=Debug",
     "-DCMAKE_MAKE_PROGRAM=C:/Program Files/JetBrains/CLion 2024.3.4/bin/ninja/win/x64/ninja.exe",
-    "-DCMAKE_PREFIX_PATH=C:/Qt/6.9.2/mingw_64",
+    "-DCMAKE_PREFIX_PATH=C:/Qt/6.10.2/mingw_64",
     "-DCMAKE_CXX_STANDARD=23"
   ],
   "cmake.buildDirectory": "${workspaceRoot}/cmake-build-debug",
@@ -15,7 +15,7 @@
   "C_Cpp.default.cppStandard": "c++23",
   "C_Cpp.default.intelliSenseMode": "gcc-x64",
   "terminal.integrated.env.windows": {
-    "PATH": "C:/Program Files/JetBrains/CLion 2024.3.4/bin/cmake/win/x64/bin/;C:/Program Files/JetBrains/CLion 2024.3.4/bin/ninja/win/x64/;C:/Qt/6.9.2/mingw_64/bin;${env:PATH}"
+    "PATH": "C:/Program Files/JetBrains/CLion 2024.3.4/bin/cmake/win/x64/bin/;C:/Qt/6.10.2/mingw_64/bin;${env:PATH}"
   },
   "cmake.environment": {
     "QSG_RHI_BACKEND": "opengl"

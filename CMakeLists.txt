@@ -4,6 +4,8 @@ project(${PROJECT_NAME})
 
 set(CMAKE_CXX_STANDARD 23)
 
-find_package(Qt6 REQUIRED COMPONENTS Charts Core Gui Multimedia SerialPort DataVisualization Network)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 add_subdirectory(src)

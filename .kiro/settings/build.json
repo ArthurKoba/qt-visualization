@@ -4,7 +4,7 @@
   "generator": "MinGW Makefiles",
   "buildType": "Release",
   "cmakeSettings": {
-    "CMAKE_PREFIX_PATH": "C:/Qt/6.9.2/mingw_64",
+    "CMAKE_PREFIX_PATH": "C:/Qt/6.10.2/mingw_64",
     "CMAKE_C_COMPILER": "gcc",
     "CMAKE_CXX_COMPILER": "g++",
     "CMAKE_CXX_STANDARD": "23",

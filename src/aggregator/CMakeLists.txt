@@ -45,12 +45,3 @@ add_executable(aggregator_client_app src/main_client.cpp)
 target_link_libraries(aggregator_client_app PRIVATE ${LIB_NAME})
 
 
-if (BUILD_SHARED_LIBS)
-    add_custom_command(
-            TARGET ${LIB_NAME} POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "$<TARGET_FILE:BDSP>"
-            "$<TARGET_FILE:core>"
-            "$<TARGET_FILE_DIR:${LIB_NAME}>"
-    )
-endif ()
