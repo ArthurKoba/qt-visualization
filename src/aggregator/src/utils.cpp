@@ -6,7 +6,7 @@ namespace aggregator_utils {
 QString component_state_to_string(ComponentState state) {
     switch (state) {
         case ComponentState::unknown: return "Unknown";
-        case ComponentState::off: return "Off";
+        case ComponentState::offline: return "Offline";
         case ComponentState::disconnected: return "Disconnected";
         case ComponentState::registered: return "Registered";
         case ComponentState::inactive: return "Inactive";

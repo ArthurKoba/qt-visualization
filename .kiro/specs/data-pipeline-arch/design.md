@@ -178,15 +178,15 @@ src/
 /// 
 /// Жизненный цикл состояний:
 /// unknown -> registered -> inactive -> idle -> active
-///                      \-> disconnected -> off (при длительном отключении)
+///                      \-> disconnected -> offline (при длительном отключении)
 enum class ComponentState : uint8_t {
     /// @brief Неизвестное состояние (заглушка на случай ошибок)
     unknown = 0,
     
     /// @brief Компонент отключился и длительное время не восстанавливает подключение (более минуты)
-    off = 1,
+    offline = 1,
     
-    /// @brief Компонент отключен, если простой достигнет минуты - переходит в off
+    /// @brief Компонент отключен, если простой достигнет минуты - переходит в offline
     disconnected = 2,
     
     /// @brief Клиент зарегистрирован, но пока ничего не делает и не сообщает
@@ -228,7 +228,7 @@ namespace aggregator_component {
     static constexpr uint16_t REGISTRATION_TIMEOUT_MS = 1000;         // Таймаут регистрации
     static constexpr int32_t CLIENT_RECONNECT_TIMEOUT_MS = 200;       // Задержка переподключения
     static constexpr int32_t RECONNECT_TRIES = 3;                     // Количество попыток переподключения
-    static constexpr int32_t COMPONENT_OFFLINE_TIMEOUT_MS = 60000;    // Таймаут перехода в состояние off (60 сек)
+    static constexpr int32_t COMPONENT_OFFLINE_TIMEOUT_MS = 60000;    // Таймаут перехода в состояние offline (60 сек)
 }
 ```
 
@@ -327,7 +327,7 @@ struct registered_component_t {
 - `idle` → `active`: при начале обработки данных
 - `active` → `idle`: при завершении обработки данных
 - любое → `disconnected`: при разрыве TCP-соединения
-- `disconnected` → `off`: через 60 секунд отсутствия соединения (с удалением из реестра)
+- `disconnected` → `offline`: через 60 секунд отсутствия соединения (с удалением из реестра)
 
 **Восстановление сессий:**
 - При переподключении с тем же UUID и токеном сессии: `disconnected` → `registered`
@@ -364,8 +364,8 @@ struct registered_component_t {
 - Автопереподключение: включено
 - Количество попыток подключения: 3 (`RECONNECT_TRIES`)
 - Задержка переподключения в случае разрыва соединения: 200 мс (`CLIENT_RECONNECT_TIMEOUT_MS`)
-- Переход в состояние `off`: 60 секунд отсутствия соединения (`COMPONENT_OFFLINE_TIMEOUT_MS`)
-- Удаление из реестра при переходе в `off` для освобождения UUID
+- Переход в состояние `offline`: 60 секунд отсутствия соединения (`COMPONENT_OFFLINE_TIMEOUT_MS`)
+- Удаление из реестра при переходе в `offline` для освобождения UUID
 - Поддержка восстановления сессий через CRC16 токены
 
 ## Режимы запуска
