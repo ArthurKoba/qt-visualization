@@ -3,19 +3,29 @@
 
 #include <QtNodes/DataFlowGraphModel>
 #include <QtNodes/NodeDelegateModelRegistry>
+#include <QJsonObject>
 
 struct UIApplicationConfig {
     bool move_to_primary_screen_on_start = true;
 };
 
-struct CoreApplicationConfig {
+struct DiagramSceneData {
+    QJsonObject scene_graph;
+};
+
+struct FileSaveApplicationConfig {
     bool enable_aggregator = false;
-    bool enable_ui = true;
     UIApplicationConfig ui{};
+    DiagramSceneData scheme_graph{};
+};
+
+struct CoreApplicationConfig {
+    bool enable_ui = true;
 };
 
 struct CoreApplicationContext {
     CoreApplicationConfig configs;
+    FileSaveApplicationConfig _file_configs;
     // AggregatorClient* _aggregator_client = nullptr;
 };
 
