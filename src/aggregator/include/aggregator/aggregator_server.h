@@ -1,13 +1,12 @@
 #ifndef AGGREGATOR_SERVER_H
 #define AGGREGATOR_SERVER_H
 
+#include <QObject>
+#include <QHash>
+
 #include "abstract/types.h"
 #include "core/tcp_packet_socket.h"
 #include "core/tcp_packet_server.h"
-
-#include <QObject>
-#include <QHash>
-#include <QUuid>
 
 
 Q_DECLARE_LOGGING_CATEGORY(aggregator_server)
@@ -20,49 +19,47 @@ Q_DECLARE_LOGGING_CATEGORY(aggregator_server)
  */
 
 class AggregatorServer final : public TcpBDSPServer {
-Q_OBJECT
+    Q_OBJECT
+
 public:
     explicit AggregatorServer(QObject *parent = nullptr);
 
-    ~AggregatorServer() final;
+    ~AggregatorServer() override;
 
-    bool start(uint16_t port = aggregator_component::DEFAULT_PORT, 
+    bool start(uint16_t port = aggregator_component::DEFAULT_PORT,
                uint32_t registration_timeout_ms = aggregator_component::REGISTRATION_TIMEOUT_MS);
 
     void stop();
 
-public slots:
-
-    void on_got_packet(BDSP::packet_context_t &packet_context, TcpBDSPSocket *socket);
-
-    void on_new_connection(TcpBDSPSocket *socket);
-
-    void on_client_disconnected(TcpBDSPSocket *socket);
-
 protected:
-    QHash<TcpBDSPSocket *, QUuid> _sockets_uuid_map;
-    QHash<QUuid, component_info_t> _components_info_map;
+    QHash<TcpBDSPSocket *, std::optional<QUuid>> _sockets_uuid_map;
     QHash<QUuid, registered_component_t> _registered_components_map;
     uint32_t _registration_timeout_ms = aggregator_component::REGISTRATION_TIMEOUT_MS;
 
+protected Q_SLOTS:
+    void _on_got_packet(BDSP::packet_context_t &packet_context, TcpBDSPSocket *socket);
+
+    void _on_new_connection(TcpBDSPSocket *socket);
+
 private:
-    bool _register_component(registration_data_t &registration_data, TcpBDSPSocket *socket);
+    bool _register_component(TcpBDSPSocket *socket, const QUuid &uuid, const component_info_t &new_info,
+                             const uint16_t session_token);
 
     bool _get_registration_status(TcpBDSPSocket *socket);
 
     void _disconnect_socket(TcpBDSPSocket *socket);
 
-    void _send_update_component_event(component_info_t &info);
+    void _send_update_component_event(component_update_full_packet_t &info);
 
     void _send_component_state_change_event(const QUuid &uuid, ComponentState new_state);
 
     void _broadcast(PacketType packet_type, uint8_t *data, size_t size);
 
-    void _broadcast_except_socket(PacketType packet_type, uint8_t *data, size_t size, TcpBDSPSocket *except_socket);
+    void _broadcast_except_socket(PacketType packet_type, uint8_t *data, size_t size,
+                                  const TcpBDSPSocket *except_socket);
 
-    void _update_component_state(const QUuid &uuid, ComponentState new_state);
+    void _update_component_state_with_broadcast(const QUuid &uuid, ComponentState new_state);
 
-    void _handle_component_offline_timeout(const QUuid &uuid);
 
     void _start_offline_timer(const QUuid &uuid);
 };

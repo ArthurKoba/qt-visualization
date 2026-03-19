@@ -1,8 +1,6 @@
-#include "aggregator/aggregator_server.h"
-
 #include <QCoreApplication>
-#include <QCommandLineParser>
-#include <QLoggingCategory>
+
+#include "aggregator/aggregator_server.h"
 
 /// @brief Структура конфигурации сервера агрегации
 struct ServerConfiguration {

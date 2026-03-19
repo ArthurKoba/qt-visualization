@@ -2,9 +2,9 @@
 #define AGGREGATOR_ABSTRACT_TYPES_H
 
 #include <cstdint>
-#include <string>
-#include <array>
 #include <QtNetwork>
+
+#include "core/tcp_packet_socket.h"
 
 namespace aggregator_component {
     static constexpr uint16_t DEFAULT_PORT = 8212;
@@ -55,28 +55,29 @@ enum class ComponentState : uint8_t {
 using uuid_t = QUuid::Id128Bytes;
 
 enum class PacketType : uint8_t {
-    error = 0,
-    component_registration = 1,
-    component_info_update = 2,
-    component_state_change = 3
+    incorrect_packet_id = 0,
+    error = 1,
+    component_registration = 2,
+    component_info_update = 3,
+    component_state_change = 4
 };
 
 using session_token_t = uint16_t; // CRC16 токен сессии
 
-struct registration_data_t {
+struct registration_request_packet_t {
     uuid_t uuid;
     ComponentType component_type;
     uint16_t component_server_port;
-    session_token_t session_token; // токен сессии, генерируемый клиентом
+    session_token_t session_token;
 } __attribute__((packed));
 
-struct component_state_t {
+struct component_update_state_packet_t {
     uuid_t uuid;
     ComponentState new_state;
 } __attribute__((packed));
 
 
-struct component_info_t {
+struct component_update_full_packet_t {
     uuid_t uuid{};
     ComponentType type = ComponentType::unknown;
     QIPv6Address address{};
@@ -84,12 +85,17 @@ struct component_info_t {
     ComponentState state = ComponentState::unknown;
 } __attribute__((packed));
 
-struct registered_component_t {
-    QTcpSocket *socket;
+struct component_info_t {
     ComponentType type;
-    uint16_t component_server_port;
     ComponentState state;
-    session_token_t session_token;
+    uint16_t component_server_port;
+    QHostAddress address;
+};
+
+struct registered_component_t {
+    TcpBDSPSocket *socket = nullptr;
+    session_token_t session_token = 0;
+    component_info_t info;
 };
 
 

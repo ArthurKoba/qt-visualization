@@ -1,14 +1,13 @@
 #ifndef AGGREGATOR_CLIENT_H
 #define AGGREGATOR_CLIENT_H
 
+#include <QObject>
+#include <QHostAddress>
+
+#include <BDSP/transceivers.h>
+
 #include "aggregator/abstract/types.h"
 #include "core/tcp_packet_socket.h"
-#include <BDSP/transceivers.h>
-#include <QTcpSocket>
-#include <QObject>
-#include <QUuid>
-#include <QHostAddress>
-#include <optional>
 
 Q_DECLARE_LOGGING_CATEGORY(aggregator_client)
 
@@ -18,52 +17,93 @@ struct AggregatorClientConfig {
     uint16_t component_server_port = 0;
 };
 
+/// @brief Клиент агрегатора с поддержкой событийной системы.
+///
+/// Подключается к серверу агрегатора, регистрирует компонент и получает
+/// уведомления о состоянии других компонентов системы. Реализует интерфейсы
+/// для публикации событий, управления жизненным циклом и фокусом окон.
 class AggregatorClient final : public QObject {
-Q_OBJECT
+    Q_OBJECT
+
 public:
-    explicit AggregatorClient(AggregatorClientConfig config, QObject *parent = nullptr);
+    /// @brief Конструктор клиента агрегатора
+    /// @param config Конфигурация клиента
+    /// @param parent Родительский объект Qt
+    explicit AggregatorClient(const AggregatorClientConfig &config, QObject *parent = nullptr);
 
-    ~AggregatorClient() final;
+    /// @brief Деструктор
+    ~AggregatorClient() override;
 
+    /// @brief Подключение к серверу агрегатора
+    /// @param address IP-адрес сервера агрегатора
+    /// @param port Порт сервера агрегатора
+    /// @param timeout_ms Тайм-аут подключения в миллисекундах
+    /// @return true если подключение успешно, false в противном случае
     bool connect_to_aggregator_server(QHostAddress address = QHostAddress::LocalHost,
                                       uint16_t port = aggregator_component::DEFAULT_PORT,
                                       int32_t timeout_ms = aggregator_component::CLIENT_RECONNECT_TIMEOUT_MS);
 
+    /// @brief Беспокнечное подключение к серверу агрегатора до установления первого соединения
+    /// @param address IP-адрес сервера агрегатора
+    /// @param port Порт сервера агрегатора
+    /// @param timeout_ms Тайм-аут подключения в миллисекундах
+    void connect_to_aggregator_server_with_waiting(const QHostAddress &address = QHostAddress::LocalHost,
+                                  uint16_t port = aggregator_component::DEFAULT_PORT,
+                                  int32_t timeout_ms = aggregator_component::CLIENT_RECONNECT_TIMEOUT_MS);
+
+
+    /// @brief Проверка подключения к серверу
+    /// @return true если подключен, false в противном случае
     bool is_connected() const;
 
+    /// @brief Проверка регистрации клиента как компонента
+    /// @return true если зарегистрирован, false в противном случае
     bool is_registered() const;
 
+    /// @brief Настройка режима переподключения
+    /// @param infinite_mode true для бесконечных попыток переподключения
+    /// @param tries Количество попыток переподключения (если не бесконечный режим)
+    /// @param reconnect_interval_ms Интервал между попытками переподключения
     void set_reconnect_mode(bool infinite_mode, int32_t tries = aggregator_component::RECONNECT_TRIES,
                             int32_t reconnect_interval_ms = aggregator_component::CLIENT_RECONNECT_TIMEOUT_MS);
 
 Q_SIGNALS:
+    /// @brief Сигнал о закрытии клиента
+    void on_client_disconnected();
 
-    void on_client_close();
+    /// @brief Сигнал о подключении клиента к агрегатору
+    void on_client_connected();
 
-    void registered();
+    /// @brief Сигнал о регистрации клиента как компонента
+    void on_client_registered();
 
-protected:
+    /// @brief Сигнал об изменении состояния компонента
+    /// @param uuid UUID компонента
+    /// @param new_state Новое состояние
+    void on_update_component_state(const QUuid &uuid, ComponentState new_state);
+
+    /// @brief Сигнал об обновлении компонента
+    /// @param uuid UUID компонента
+    /// @param info Информация о компоненте
+    void on_update_component_info(const QUuid &uuid, const component_info_t &info);
+
+private:
     AggregatorClientConfig _cfg{};
     TcpBDSPSocket _socket;
     QHostAddress _aggregator_server_address = QHostAddress::LocalHost;
     uint16_t _aggregator_server_port = aggregator_component::DEFAULT_PORT;
     bool _is_registered = false;
-    session_token_t _session_token = 0; // токен сессии, генерируемый клиентом
+    session_token_t _session_token = 0;
     std::optional<int32_t> _reconnect_tries;
     int32_t _current_reconnect_attempt = 0;
     QTimer _reconnect_timer;
     int32_t _reconnect_interval_ms = aggregator_component::CLIENT_RECONNECT_TIMEOUT_MS;
 
-private:
-    void _start_reconnect_timer();
+    void _handle_packet(BDSP::packet_context_t &packet_ctx);
 
-    void _on_reconnect_timeout();
+    void _start_reconnecting();
 
-    void on_socket_connected();
-
-    void on_socket_disconnected();
-
-    void handle_packet(BDSP::packet_context_t &packet_ctx);
+    void _send_registration_request() const;
 };
 
 #endif // AGGREGATOR_CLIENT_H

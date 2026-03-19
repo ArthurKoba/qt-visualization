@@ -2,8 +2,6 @@
 #define AGGREGATOR_UTILS_H
 
 #include "abstract/types.h"
-#include <QString>
-#include <QUuid>
 
 namespace aggregator_utils {
 

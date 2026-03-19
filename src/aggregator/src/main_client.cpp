@@ -1,14 +1,6 @@
-#include "aggregator/aggregator_client.h"
 #include <QCoreApplication>
-#include <QCommandLineParser>
-#include <QHostAddress>
-#include <QJsonDocument>
-#include <QJsonObject>
-#include <QStandardPaths>
-#include <QTimer>
-#include <QEventLoop>
-#include <QLoggingCategory>
 
+#include "aggregator/aggregator_client.h"
 
 /// @brief Структура конфигурации клиента агрегации
 struct ClientConfiguration {
@@ -315,28 +307,9 @@ int32_t main(int32_t argc, char *argv[]) {
     if (config.wait_for_server) {
         qInfo("Waiting for aggregator server %s:%d to become available...",
               qPrintable(config.server_address.toString()), config.server_port);
-
         // Попытки подключения до первого успешного соединения
-        bool connected = false;
-        int32_t attempt = 1;
-
-        while (not connected) {
-
-            if (client.connect_to_aggregator_server(config.server_address, config.server_port,
-                                                    config.connection_timeout_ms)) {
-                connected = true;
-                qInfo("Successfully connected to aggregator server on attempt %d", attempt);
-            } else {
-                // Ожидание перед следующей попыткой
-                QEventLoop loop;
-                QTimer::singleShot(config.reconnect_interval_ms, &loop, &QEventLoop::quit);
-                loop.exec();
-
-                attempt++;
-            }
-        }
-
-        qInfo("Connected to aggregator server, waiting for registration...");
+        client.connect_to_aggregator_server_with_waiting(config.server_address, config.server_port,
+                                                    config.connection_timeout_ms);
     } else {
         // Обычное подключение без ожидания
         qInfo("Connecting to aggregator server %s:%d...",
@@ -347,8 +320,6 @@ int32_t main(int32_t argc, char *argv[]) {
             qCritical("Failed to connect to aggregator server");
             return 1;
         }
-
-        qInfo("Connected to aggregator server, waiting for registration...");
     }
 
     return QCoreApplication::exec();

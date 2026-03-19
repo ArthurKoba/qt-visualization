@@ -16,14 +16,14 @@ endif ()
 
 target_sources(${LIB_NAME} PUBLIC
         include/aggregator/abstract/types.h
-
         include/aggregator/aggregator_server.h
-        src/aggregator_server.cpp
-
         include/aggregator/aggregator_client.h
-        src/aggregator_client.cpp
-
         include/aggregator/utils.h
+)
+
+target_sources(${LIB_NAME} PRIVATE
+        src/aggregator_server.cpp
+        src/aggregator_client.cpp
         src/utils.cpp
 )
 
