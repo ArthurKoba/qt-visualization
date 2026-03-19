@@ -45,6 +45,7 @@ foreach(lib IN LISTS APP_PROJECT_LIBS)
 endforeach()
 
 add_subdirectory(aggregator)
+add_subdirectory(core_app)
 
 target_link_libraries(${APP_NAME} PUBLIC
         Qt::Core
