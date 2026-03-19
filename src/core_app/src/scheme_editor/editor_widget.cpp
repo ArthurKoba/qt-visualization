@@ -6,8 +6,14 @@
 #include <QtNodes/GraphicsView>
 #include <QtNodes/NodeDelegateModelRegistry>
 
-#include <QtWidgets/QMenuBar>
-#include <QtWidgets/QVBoxLayout>
+#include <QtWidgets/QMessageBox>
+#include <QtCore/QFile>
+#include <QtCore/QJsonDocument>
+#include <QtCore/QJsonObject>
+#include <QtCore/QStandardPaths>
+#include <QtCore/QDir>
+#include <QtCore/QDebug>
+#include <QtGui/QKeyEvent>
 
 #include "core_app/scheme_editor/sink_data_model.h"
 #include "core_app/scheme_editor/source_data_model.h"
@@ -40,58 +46,25 @@ static void setStyle__() {
   )");
 }
 
-SchemeEditorWidget::SchemeEditorWidget(QWidget *parent) :
+SchemeEditorWidget::SchemeEditorWidget(CoreApplicationContext &ctx, QWidget *parent) :
             QWidget(parent),
-            _registry(std::make_shared<NodeDelegateModelRegistry>()),
-            _data_flow_graph_model(std::make_shared<DataFlowGraphModel>(_registry)),
-            _scene(new DataFlowGraphicsScene(*_data_flow_graph_model, this)),
+            _scene(new DataFlowGraphicsScene(*ctx.data_flow_graph, this)),
             _view(new GraphicsView(this)) {
     setStyle__();
-
 
     _scene->setGroupingEnabled(false);
     _view->setScene(_scene);
 
-    _registry->registerModel<NumberSourceDataModel>();
-    _registry->registerModel<NumberDisplayDataModel>();
-    _registry->registerModel<AdditionModel>();
 
 
-
-    auto menuBar = new QMenuBar(this);
-    QMenu *menu = menuBar->addMenu("File");
-
-    auto saveAction = menu->addAction("Save Scene");
-    saveAction->setShortcut(QKeySequence::Save);
-
-    auto loadAction = menu->addAction("Load Scene");
-    loadAction->setShortcut(QKeySequence::Open);
-
-    QVBoxLayout *l = new QVBoxLayout(this);
+    _setupConnections();
+}
 
 
-    l->addWidget(menuBar);
-
-    l->addWidget(_view);
-    l->setContentsMargins(0, 0, 0, 0);
-    l->setSpacing(0);
-
-    connect(saveAction, &QAction::triggered, _scene, [this]() {
-
-        if (_scene->save())
-            setWindowModified(false);
-    });
-
-    connect(loadAction, &QAction::triggered, _scene, &DataFlowGraphicsScene::load);
-
+void SchemeEditorWidget::_setupConnections() {
     connect(_scene, &DataFlowGraphicsScene::sceneLoaded, _view, &GraphicsView::centerScene);
 
     connect(_scene, &DataFlowGraphicsScene::modified, this, [this]() {
-
-        // setWindowModified(true);
+        // Можно добавить индикатор изменений
     });
-    if (_scene->groupingEnabled()) {
-        auto loadGroupAction = menu->addAction("Load Group...");
-        connect(loadGroupAction, &QAction::triggered, [this] { _scene->loadGroupFile(); });
-    }
 }

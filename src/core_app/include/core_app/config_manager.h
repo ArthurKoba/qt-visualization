@@ -7,9 +7,9 @@ class ConfigManager {
 public:
     explicit ConfigManager(QString config_path = "config.json");
     
-    bool load(FileSaveApplicationConfig& config);
+    bool load(FileSaveApplicationConfig& config) const;
     
-    bool save(const FileSaveApplicationConfig& config);
+    bool save(const FileSaveApplicationConfig& config) const;
     
     [[nodiscard]] QString getConfigPath() const;
     
@@ -18,13 +18,13 @@ public:
 private:
     QString _config_path;
     
-    void _parse_aggregator_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
-    void _parse_ui_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
-    void _parse_diagram_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
+    static void _parse_aggregator_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
+    static void _parse_ui_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
+    static void _parse_diagram_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
     
-    void _save_aggregator_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
-    void _save_ui_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
-    void _save_diagram_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
+    static void _save_aggregator_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
+    static void _save_ui_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
+    static void _save_scheme_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
 };
 
 #endif // CORE_APP_CONFIG_MANAGER_H

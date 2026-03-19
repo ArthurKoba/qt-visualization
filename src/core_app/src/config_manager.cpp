@@ -14,7 +14,7 @@ Q_LOGGING_CATEGORY(core_app_config, "core_app.config")
 
 ConfigManager::ConfigManager(QString config_path) : _config_path(std::move(config_path)) { }
 
-bool ConfigManager::load(FileSaveApplicationConfig &config) {
+bool ConfigManager::load(FileSaveApplicationConfig &config) const {
     QFile config_file(_config_path);
 
     if (!config_file.exists()) {
@@ -46,7 +46,7 @@ bool ConfigManager::load(FileSaveApplicationConfig &config) {
     return true;
 }
 
-bool ConfigManager::save(const FileSaveApplicationConfig &config) {
+bool ConfigManager::save(const FileSaveApplicationConfig &config) const {
     // Создаем директорию если её нет
     const QFileInfo file_info(_config_path);
     const QDir dir = file_info.absoluteDir();
@@ -64,7 +64,7 @@ bool ConfigManager::save(const FileSaveApplicationConfig &config) {
     QJsonObject json_obj;
     _save_aggregator_config(json_obj, config);
     _save_ui_config(json_obj, config);
-    _save_diagram_config(json_obj, config);
+    _save_scheme_config(json_obj, config);
 
     const QJsonDocument json_doc(json_obj);
     config_file.write(json_doc.toJson());
@@ -91,14 +91,12 @@ void ConfigManager::_parse_aggregator_config(const QJsonObject &json_obj, FileSa
 void ConfigManager::_parse_ui_config(const QJsonObject &json_obj, FileSaveApplicationConfig &config) {
     if (not json_obj.contains("ui"))return;
     const QJsonObject ui_obj = json_obj["ui"].toObject();
-    config.ui.move_to_primary_screen_on_start =
-    ui_obj.value("move_to_primary_screen_on_start").toBool(true);
+    config.ui.move_to_primary_screen_on_start = ui_obj.value("move_to_primary_screen_on_start").toBool(false);
+    config.ui.autosave_enabled = ui_obj.value("autosave_enabled").toBool(true);
 }
 
 void ConfigManager::_parse_diagram_config(const QJsonObject &json_obj, FileSaveApplicationConfig &config) {
-    if (not json_obj.contains("scene_graph")) return;
-    const QJsonObject diagram_obj = json_obj["scene_graph"].toObject();
-    config.scheme_graph.scene_graph = diagram_obj.value("scene_graph").toObject(QJsonObject());
+    config.scene_graph = json_obj.value("scene_graph").toObject(QJsonObject());
 }
 
 void ConfigManager::_save_aggregator_config(QJsonObject &json_obj, const FileSaveApplicationConfig &config) {
@@ -110,11 +108,10 @@ void ConfigManager::_save_aggregator_config(QJsonObject &json_obj, const FileSav
 void ConfigManager::_save_ui_config(QJsonObject &json_obj, const FileSaveApplicationConfig &config) {
     QJsonObject ui_obj;
     ui_obj["move_to_primary_screen_on_start"] = config.ui.move_to_primary_screen_on_start;
+    ui_obj["autosave_enabled"] = config.ui.autosave_enabled;
     json_obj["ui"] = ui_obj;
 }
 
-void ConfigManager::_save_diagram_config(QJsonObject &json_obj, const FileSaveApplicationConfig &config) {
-    QJsonObject scheme_graph_obj;
-    scheme_graph_obj["scene_graph"] = config.scheme_graph.scene_graph;
-    json_obj["scene_graph"] = scheme_graph_obj;
+void ConfigManager::_save_scheme_config(QJsonObject &json_obj, const FileSaveApplicationConfig &config) {
+    json_obj["scene_graph"] = config.scene_graph;
 }

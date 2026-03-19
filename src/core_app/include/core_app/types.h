@@ -5,18 +5,18 @@
 #include <QtNodes/NodeDelegateModelRegistry>
 #include <QJsonObject>
 
-struct UIApplicationConfig {
-    bool move_to_primary_screen_on_start = true;
-};
+using node_delegate_model_registry_t = std::shared_ptr<QtNodes::NodeDelegateModelRegistry>;
+using data_flow_graph_model_t = std::shared_ptr<QtNodes::DataFlowGraphModel>;
 
-struct DiagramSceneData {
-    QJsonObject scene_graph;
+struct UIApplicationConfig {
+    bool move_to_primary_screen_on_start;
+    bool autosave_enabled;
 };
 
 struct FileSaveApplicationConfig {
     bool enable_aggregator = false;
     UIApplicationConfig ui{};
-    DiagramSceneData scheme_graph{};
+    QJsonObject scene_graph;
 };
 
 struct CoreApplicationConfig {
@@ -25,11 +25,11 @@ struct CoreApplicationConfig {
 
 struct CoreApplicationContext {
     CoreApplicationConfig configs;
-    FileSaveApplicationConfig _file_configs;
+    FileSaveApplicationConfig file_configs;
+    node_delegate_model_registry_t delegate_model_registry;
+    data_flow_graph_model_t data_flow_graph;
     // AggregatorClient* _aggregator_client = nullptr;
 };
 
-using node_delegate_model_registry_t = std::shared_ptr<QtNodes::NodeDelegateModelRegistry>;
-using data_flow_graph_model_t = std::shared_ptr<QtNodes::DataFlowGraphModel>;
 
 #endif // CORE_APP_TYPES_H

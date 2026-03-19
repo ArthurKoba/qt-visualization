@@ -20,12 +20,14 @@ MainWindow::MainWindow(CoreApplicationContext &context) : _context(context) {
     const auto saveAction = menu->addAction("Save Scene");
     saveAction->setShortcut(QKeySequence::Save);
 
-    connect(saveAction, &QAction::triggered, this, [this] () {emit on_config_updated();});
+    connect(saveAction, &QAction::triggered, this, [this]() { emit on_config_updated(); });
 
     _tab_widget = new QTabWidget(this);
-    _tab_widget->addTab(new SchemeEditorWidget(this), "Scheme Editor");
-    // _tab_widget->addTab(new SettingsWidget(this), "Settings");
+    _tab_widget->addTab(new SchemeEditorWidget(_context, this), "Scheme Editor");
+
+    const auto settings_widget = new SettingsWidget(_context, this);
+    connect(settings_widget, &SettingsWidget::on_settings_changed, this, &MainWindow::on_config_updated);
+    _tab_widget->addTab(settings_widget, "Settings");
 
     setCentralWidget(_tab_widget);
 }
-
