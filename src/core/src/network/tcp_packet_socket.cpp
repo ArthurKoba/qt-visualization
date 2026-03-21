@@ -1,4 +1,4 @@
-#include "core/tcp_packet_socket.h"
+#include "core/network/tcp_packet_socket.h"
 #include "core/utils.h"
 
 #include <QDataStream>

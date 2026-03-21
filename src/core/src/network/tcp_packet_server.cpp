@@ -1,4 +1,4 @@
-#include "core/tcp_packet_server.h"
+#include "core/network/tcp_packet_server.h"
 
 Q_LOGGING_CATEGORY(tcp_bdsp_server, "aggregator.tcp_bdsp_server")
 

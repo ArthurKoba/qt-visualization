@@ -5,7 +5,7 @@
 #include <mmdeviceapi.h>
 #include <string>
 
-#include "core/abs_task.h"
+#include "core/abstract/abs_task.h"
 #include "loopback/types.h"
 
 namespace audio::loopback {

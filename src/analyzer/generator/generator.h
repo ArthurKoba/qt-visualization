@@ -3,7 +3,7 @@
 
 #include <functional>
 
-#include "core/abs_task.h"
+#include "core/abstract/abs_task.h"
 
 class Generator final : public AbstractTask {
     typedef std::function<void(std::vector<float>)> audio_handler_t;

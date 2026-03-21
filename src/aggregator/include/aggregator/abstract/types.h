@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <QtNetwork>
 
-#include "core/tcp_packet_socket.h"
+#include "core/network/tcp_packet_socket.h"
 
 namespace aggregator_component {
     static constexpr uint16_t DEFAULT_PORT = 8212;

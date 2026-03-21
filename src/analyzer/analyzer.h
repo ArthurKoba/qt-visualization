@@ -5,7 +5,7 @@
 #include <functional>
 #include <QElapsedTimer>
 
-#include "core/abs_task.h"
+#include "core/abstract/abs_task.h"
 #include "fft.h"
 #include "audio_window.h"
 
