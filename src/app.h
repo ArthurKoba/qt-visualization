@@ -6,23 +6,21 @@
 #include <QSplitter>
 #include <QSerialPort>
 
-#include "analyzer/analyzer.h"
-#include "analyzer/generator/generator.h"
-#include "analyzer/spectrogram.h"
-#include "loopback/factory.h"
-#include "charts/abs.h"
-#include "surfacegraph.h"
-#include "BDSP/receivers.h"
+#include <BDSP/receivers.h>
+
+#include "analyzer/analyze/analyzer.h"
+#include "analyzer/analyze/spectrogram.h"
+#include "analyzer/loopback/windows_loopback.h"
+#include "visualization/abstract/abs.h"
+#include "visualization/surfaces/surfacegraph.h"
 
 class Application : public QApplication {
 public:
     struct Config {
         bool run_loopback = true;
         bool run_serial = false;
-        bool run_generator = false;
         bool run_analyser = true;
         bool show_serial_samples = false;
-        bool show_generator_samples = false;
         bool show_raw_samples = false;
         bool show_samples = false;
         bool show_amplitudes = true;
@@ -49,15 +47,14 @@ private:
     Spectrogram *spectrogram = nullptr;
 
     Analyzer *analyzer = nullptr;
-    Generator *generator = nullptr;
-    audio::loopback::IAudioLoopback *loopback = nullptr;
+    audio::loopback::WASAPILoopback *loopback = nullptr;
     QSerialPort *serial{};
     BDSP::COBSZPEReceiver *receiver = nullptr;
     QSplitter *splitter;
     QTabWidget tabWidget;
+    QMainWindow _window;
 
     void _run_analyzer();
-    void _run_generator();
     void _run_loopback();
     void _run_serial();
 };

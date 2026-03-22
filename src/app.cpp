@@ -1,11 +1,10 @@
 #include "app.h"
 
-#include "charts/line.h"
-#include "charts/bar.h"
-#include "charts/freq.h"
+#include "visualization/charts/line.h"
+#include "visualization/charts/bar.h"
+#include "visualization/charts/freq.h"
 
 Application::Application(int &argc, char **argv, int flags) : QApplication(argc, argv, flags) {
-
     if (_cfg.run_analyser) {
         _run_analyzer();
     }
@@ -14,18 +13,12 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
         _run_loopback();
     }
 
-    if (_cfg.run_generator) {
-        _run_generator();
-    }
-
     if (_cfg.run_serial) {
         _run_serial();
-
     }
 
     splitter = new QSplitter;
     splitter->setOrientation(Qt::Vertical);
-
 
 
     if (_cfg.show_serial_samples) {
@@ -39,9 +32,9 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
 
     if (_cfg.show_serial_audio_spectre) {
         serialSpectreView = new BarChartView();
-//        serialSpectreView->axisX.setTickCount(31);
-//        serialSpectreView->axisX.setLabelFormat("%.0f");
-//        serialSpectreView->axisX.setMinorTickCount(9);
+        //        serialSpectreView->axisX.setTickCount(31);
+        //        serialSpectreView->axisX.setLabelFormat("%.0f");
+        //        serialSpectreView->axisX.setMinorTickCount(9);
         serialSpectreView->chart()->setTitle("Serial Spectre");
         serialSpectreView->set_auto_resizing(true);
         serialSpectreView->set_auto_gain(true, 255, 0, 2);
@@ -77,7 +70,7 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
             } else if (packet_context.packet_id == 2 and app.serialSpectreView) {
                 size_t spectre_size = packet_context.size;
                 spectre_size = 300;
-//                spectre_size /= 2;
+                //                spectre_size /= 2;
                 std::vector<float> spectre;
                 auto *packet_samples = reinterpret_cast<uint8_t *>(packet_context.data_ptr);
                 for (int i = 0; i < spectre_size; ++i) {
@@ -104,9 +97,9 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
                 app.serialFastAmplitudesView->update(amplitudes);
                 return;
             }
-//            static uint32_t j = 0;
-//        qInfo("[%d] Got packet. Packet ID: %d, size: %d", j++, packet_context.packet_id, packet_context.size);
-//        return;
+            //            static uint32_t j = 0;
+            //        qInfo("[%d] Got packet. Packet ID: %d, size: %d", j++, packet_context.packet_id, packet_context.size);
+            //        return;
             qWarning("Incorrect serial packet processing");
         }, this);
     }
@@ -119,15 +112,6 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
         splitter->addWidget(rawSamplesView);
     } else if (_cfg.show_raw_samples) {
         qInfo("Raw samples only can show when loopback running");
-    }
-
-    if (_cfg.show_generator_samples and generator) {
-        generatorSamplesView = new LineChartView();
-        generatorSamplesView->set_range(-1, 1);
-        generatorSamplesView->chart()->setTitle("Generator samples");
-        splitter->addWidget(generatorSamplesView);
-    } else if (_cfg.show_generator_samples) {
-        qInfo("Generator samples only can show when generator running");
     }
 
     if (_cfg.show_samples and analyzer) {
@@ -170,33 +154,28 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
 
     const QSize screenSize = tabWidget.screen()->size();
     const QSize minimumGraphSize{screenSize.width() / 2, qRound(screenSize.height() / 1.75)};
-//
+    //
     if (_cfg.show_surface) {
-        surfaceView = new SurfaceGraph();
+        surfaceView = new SurfaceGraph(&tabWidget);
         spectrogram = new Spectrogram(400);
         if (!surfaceView->initialize(minimumGraphSize, screenSize)) {
             qWarning("Couldn't initialize the OpenGL context.");
         }
-        tabWidget.addTab(surfaceView->surfaceWidget(), "surface tab");
+        tabWidget.addTab(surfaceView, "surface tab");
     }
-
-
 
     tabWidget.addTab(splitter, "main");
     tabWidget.resize(1200, 800);
-    tabWidget.show();
+    // tabWidget.show();
 
-////    window.setCentralWidget(tabWidget);
-////    window.grabGesture(Qt::PanGesture);
-////    window.grabGesture(Qt::PinchGesture);
-////    window.show();
+    _window.setCentralWidget(tabWidget.window());
+    //    _window.setCentralWidget(tabWidget);
+    // _window.grabGesture(Qt::PanGesture);
+    // _window.grabGesture(Qt::PinchGesture);
+    _window.show();
 }
 
 Application::~Application() {
-    if (generator) {
-        generator->stop();
-        qInfo("Generator stopped successfully");
-    }
     if (analyzer) {
         analyzer->stop();
         qInfo("Analyzer stopped successfully");
@@ -233,9 +212,10 @@ void Application::_run_analyzer() {
             testAmplitudesView->update(analyzer->amplitudes_test.left);
         }
 
-        if (surfaceView and surfaceView->modifier and spectrogram) {
+        if (surfaceView and spectrogram) {
             spectrogram->push(analyzer->amplitudes_test.left);
-            surfaceView->modifier->update(spectrogram);
+            const auto vector_spectrogram = spectrogram->get_vector_spectrogram();
+            surfaceView->update(vector_spectrogram);
         }
     });
 
@@ -248,7 +228,7 @@ void Application::_run_loopback() {
         return qDebug("Loopback already started");
     }
 
-    loopback = audio::loopback::LoopbackFactory::get_loopback();
+    loopback = new audio::loopback::WASAPILoopback();
 
     if (not loopback) {
         return qCritical("Failed get loopback from Factory");
@@ -274,27 +254,12 @@ void Application::_run_loopback() {
             sample_rate = data.sample_rate;
             analyzer->update_sample_rate(sample_rate);
             if (amplitudesView) {
-                reinterpret_cast<FreqChartView*>(amplitudesView)->update_freq_step(analyzer->get_freq_step());
+                reinterpret_cast<FreqChartView *>(amplitudesView)->update_freq_step(analyzer->get_freq_step());
             }
         }
     });
 
     loopback->start();
-}
-
-void Application::_run_generator() {
-    if (generator) {
-        return qDebug("Generator already started");
-    }
-
-    generator = new Generator;
-
-    generator->set_handler([this](std::vector<float> data) {
-        if (generatorSamplesView) {
-            generatorSamplesView->update(data);
-        }
-    });
-    generator->start();
 }
 
 void Application::_run_serial() {
@@ -329,7 +294,7 @@ void Application::_run_serial() {
         };
     });
 
-    receiver->set_packet_handler([] (BDSP::packet_context_t &packet, void *ctx) {
+    receiver->set_packet_handler([](BDSP::packet_context_t &packet, void *ctx) {
         qWarning("Got packet, ID: %d. But packet handler not set...", packet.packet_id);
     }, nullptr);
 

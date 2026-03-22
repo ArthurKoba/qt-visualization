@@ -1,10 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Gui)
 
 set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC OFF)
-set(CMAKE_AUTORCC OFF)
 
 set(HEADERS
         ${CALC_SOURCE_FILES}
@@ -37,15 +34,9 @@ set(SOURCES
 
 add_executable(core_app ${SOURCES} ${HEADERS} "src/main.cpp")
 target_include_directories(core_app PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
-target_link_libraries(core_app Qt6::Core Qt6::Widgets QtNodes)
 
+find_package(Qt6 REQUIRED COMPONENTS Core Widgets Network Gui)
 
-
-FetchContent_Declare(
-        QtNodes
-        GIT_REPOSITORY https://github.com/paceholder/nodeeditor.git
-        GIT_TAG master
-)
 FetchContent_MakeAvailable(QtNodes)
 
 target_link_libraries(core_app

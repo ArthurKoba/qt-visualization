@@ -16,13 +16,13 @@ endif ()
 
 
 target_sources(${LIB_NAME} PUBLIC
-        include/core/abs_task.h
-        include/core/tcp_packet_socket.h
-        include/core/tcp_packet_server.h
+        include/core/abstract/abs_task.h
+        include/core/network/tcp_packet_socket.h
+        include/core/network/tcp_packet_server.h
         include/core/utils.h
-        src/abs_task.cpp
-        src/tcp_packet_socket.cpp
-        src/tcp_packet_server.cpp
+        src/abstract/abs_task.cpp
+        src/network/tcp_packet_socket.cpp
+        src/network/tcp_packet_server.cpp
         src/utils.cpp
 )
 

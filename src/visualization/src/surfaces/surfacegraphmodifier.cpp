@@ -1,0 +1,290 @@
+#include "visualization/surfaces/surfacegraphmodifier.h"
+
+#include <QtDataVisualization/qvalue3daxis.h>
+#include <QtDataVisualization/q3dtheme.h>
+
+#include <QtGui/qquaternion.h>
+
+#include <QtCore/qmath.h>
+
+using namespace Qt::StringLiterals;
+
+SurfaceGraphModifier::SurfaceGraphModifier(Q3DSurface *surface, QLabel *label, QObject *parent) : QObject(parent),
+    m_graph(surface),
+    m_textField(label) {
+    m_graph->scene()->activeCamera()->setZoomLevel(155.f);
+    m_graph->scene()->activeCamera()->setCameraPreset(Q3DCamera::CameraPresetIsometricRightHigh);
+    m_graph->activeTheme()->setType(Q3DTheme::ThemeArmyBlue);
+    m_graph->setShadowQuality(QAbstract3DGraph::ShadowQualitySoftLow);
+
+    m_graph->setAxisX(new QValue3DAxis);
+    m_graph->setAxisY(new QValue3DAxis);
+    m_graph->setAxisZ(new QValue3DAxis);
+
+    m_dataProxy = new QSurfaceDataProxy();
+    m_dataSeries = new QSurface3DSeries(m_dataProxy);
+
+    fillDataProxy();
+
+    connect(m_graph, &QAbstract3DGraph::selectedElementChanged,
+            this, &SurfaceGraphModifier::handleElementSelected);
+
+    m_selectionAnimation = new QPropertyAnimation(this);
+    m_selectionAnimation->setPropertyName("scaling");
+    m_selectionAnimation->setDuration(100);
+    m_selectionAnimation->setLoopCount(-1);
+}
+
+void SurfaceGraphModifier::update(const std::vector<std::vector<float> > &spectrogram) {
+    if (spectrogram.empty()) return;
+    if (spectrogram.size() not_eq sampleCountZ or spectrogram[0].size() not_eq sampleCountX) {
+
+        updateAxisRanges(0, spectrogram[0].size(), 0, spectrogram.size());
+    }
+
+    auto *dataArray = new QSurfaceDataArray;
+
+    dataArray->reserve(sampleCountZ);
+    for (int ch = 0; ch < spectrogram.size(); ++ch) {
+        auto *newRow = new QSurfaceDataRow;
+        newRow->reserve(spectrogram[ch].size());
+        for (int x = 0; x < spectrogram[ch].size(); x++) {
+            newRow->append(QSurfaceDataItem({
+                static_cast<float>(x), spectrogram[ch][x], float(ch)
+            }));
+        }
+        dataArray->append(newRow);
+    }
+
+    m_dataProxy->resetArray(dataArray);
+}
+
+
+void SurfaceGraphModifier::fillDataProxy() {
+    float stepX = (sampleMaxX - sampleMinX) / float(sampleCountX - 1);
+    float stepZ = (sampleMaxX - sampleMinX) / float(sampleCountZ - 1);
+
+    auto *dataArray = new QSurfaceDataArray;
+    dataArray->reserve(sampleCountZ);
+    for (int i = 0; i < sampleCountZ; ++i) {
+        auto *newRow = new QSurfaceDataRow;
+        newRow->reserve(sampleCountX);
+        // Keep values within range bounds, since just adding step can cause minor drift due
+        // to the rounding errors.
+        float z = qMin(sampleMaxZ, (i * stepZ + sampleMinZ));
+        for (int j = 0; j < sampleCountX; ++j) {
+            float x = qMin(sampleMaxX, (j * stepX + sampleMinX));
+            float R = qSqrt(z * z + x * x) + 0.01f;
+            float y = (qSin(R) / R + 0.24f) * 1.61f;
+            newRow->append(QSurfaceDataItem({
+                x, y, z
+            }));
+        }
+        dataArray->append(newRow);
+    }
+
+    m_dataProxy->resetArray(dataArray);
+}
+
+void SurfaceGraphModifier::enable3DModel() {
+    m_dataSeries->setDrawMode(QSurface3DSeries::DrawSurfaceAndWireframe);
+    m_dataSeries->setFlatShadingEnabled(true);
+
+    m_graph->axisX()->setLabelFormat("%.2f");
+    m_graph->axisZ()->setLabelFormat("%.2f");
+    m_graph->axisX()->setRange(sampleMinX, sampleMaxX);
+    m_graph->axisY()->setRange(0.f, 2.f);
+    m_graph->axisZ()->setRange(sampleMinZ, sampleMaxZ);
+    m_graph->axisX()->setLabelAutoRotation(30.f);
+    m_graph->axisY()->setLabelAutoRotation(90.f);
+    m_graph->axisZ()->setLabelAutoRotation(30.f);
+
+    m_graph->axisX()->setReversed(true);
+
+    m_graph->addSeries(m_dataSeries);
+
+    m_graph->axisX()->setTitleVisible(true);
+    m_graph->axisY()->setTitleVisible(true);
+    m_graph->axisZ()->setTitleVisible(true);
+
+    m_graph->axisX()->setTitle("Time (x)");
+    m_graph->axisY()->setTitle("Signal (y)");
+    m_graph->axisZ()->setTitle("Frequency (z)");
+
+    m_graph->setActiveInputHandler(m_defaultInputHandler);
+
+    m_rangeMinX = sampleMinX;
+    m_rangeMinZ = sampleMinZ;
+    m_stepX = (sampleMaxX - sampleMinX) / float(sampleCountX - 1);
+    m_stepZ = (sampleMaxZ - sampleMinZ) / float(sampleCountZ - 1);
+    m_axisMinSliderX->setMinimum(0);
+    m_axisMinSliderX->setMaximum(sampleCountX - 2);
+    m_axisMinSliderX->setValue(0);
+    m_axisMaxSliderX->setMinimum(1);
+    m_axisMaxSliderX->setMaximum(sampleCountX - 1);
+    m_axisMaxSliderX->setValue(sampleCountX - 1);
+    m_axisMinSliderZ->setMinimum(0);
+    m_axisMinSliderZ->setMaximum(sampleCountZ - 2);
+    m_axisMinSliderZ->setValue(0);
+    m_axisMaxSliderZ->setMinimum(1);
+    m_axisMaxSliderZ->setMaximum(sampleCountZ - 1);
+    m_axisMaxSliderZ->setValue(sampleCountZ - 1);
+}
+
+
+void SurfaceGraphModifier::adjustXMin(int min) {
+    float minX = m_stepX * float(min) + m_rangeMinX;
+
+    int max = m_axisMaxSliderX->value();
+    if (min >= max) {
+        max = min + 1;
+        m_axisMaxSliderX->setValue(max);
+    }
+    float maxX = m_stepX * max + m_rangeMinX;
+
+    setAxisXRange(minX, maxX);
+}
+
+void SurfaceGraphModifier::adjustXMax(int max) {
+    float maxX = m_stepX * float(max) + m_rangeMinX;
+
+    int min = m_axisMinSliderX->value();
+    if (max <= min) {
+        min = max - 1;
+        m_axisMinSliderX->setValue(min);
+    }
+    float minX = m_stepX * min + m_rangeMinX;
+
+    setAxisXRange(minX, maxX);
+}
+
+void SurfaceGraphModifier::adjustZMin(int min) {
+    float minZ = m_stepZ * float(min) + m_rangeMinZ;
+
+    int max = m_axisMaxSliderZ->value();
+    if (min >= max) {
+        max = min + 1;
+        m_axisMaxSliderZ->setValue(max);
+    }
+    float maxZ = m_stepZ * max + m_rangeMinZ;
+
+    setAxisZRange(minZ, maxZ);
+}
+
+void SurfaceGraphModifier::adjustZMax(int max) {
+    float maxX = m_stepZ * float(max) + m_rangeMinZ;
+
+    int min = m_axisMinSliderZ->value();
+    if (max <= min) {
+        min = max - 1;
+        m_axisMinSliderZ->setValue(min);
+    }
+    float minX = m_stepZ * min + m_rangeMinZ;
+
+    setAxisZRange(minX, maxX);
+}
+
+void SurfaceGraphModifier::updateAxisRanges(float xMin, float xMax, float zMin, float zMax) {
+    sampleCountX = xMax;
+    sampleCountZ = zMax;
+    sampleMinX = xMin;
+    sampleMaxX = xMax;
+    sampleMinZ = zMin;
+    sampleMaxZ = zMax;
+    enable3DModel();
+}
+
+
+void SurfaceGraphModifier::setAxisXRange(float min, float max) {
+    m_graph->axisX()->setRange(min, max);
+}
+
+void SurfaceGraphModifier::setAxisZRange(float min, float max) {
+    m_graph->axisZ()->setRange(min, max);
+}
+
+void SurfaceGraphModifier::setBlackToYellowGradient() {
+    //! [8]
+    QLinearGradient gr;
+    gr.setColorAt(0.f, Qt::black);
+    gr.setColorAt(0.33f, Qt::blue);
+    gr.setColorAt(0.67f, Qt::red);
+    gr.setColorAt(1.f, Qt::yellow);
+
+    m_dataSeries->setBaseGradient(gr);
+    m_dataSeries->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
+}
+
+void SurfaceGraphModifier::setGreenToRedGradient() {
+    QLinearGradient gr;
+    gr.setColorAt(0.f, Qt::darkGreen);
+    gr.setColorAt(0.5f, Qt::yellow);
+    gr.setColorAt(0.8f, Qt::red);
+    gr.setColorAt(1.f, Qt::darkRed);
+
+    m_dataSeries->setBaseGradient(gr);
+    m_dataSeries->setColorStyle(Q3DTheme::ColorStyleRangeGradient);
+}
+
+
+void SurfaceGraphModifier::handleElementSelected(QAbstract3DGraph::ElementType type) {
+    resetSelection();
+    if (type == QAbstract3DGraph::ElementCustomItem) {
+        QCustom3DItem *item = m_graph->selectedCustomItem();
+        QString text;
+        if (qobject_cast<QCustom3DLabel *>(item) != 0) {
+            text.append("Custom label: ");
+        } else {
+            QStringList split = item->meshFile().split("/");
+            text.append(split.last());
+            text.append(": ");
+        }
+        int index = m_graph->selectedCustomItemIndex();
+        text.append(QString::number(index));
+        m_textField->setText(text);
+        m_previouslyAnimatedItem = item;
+        m_previousScaling = item->scaling();
+        m_selectionAnimation->setTargetObject(item);
+        m_selectionAnimation->setStartValue(item->scaling());
+        m_selectionAnimation->setEndValue(item->scaling() * 1.5f);
+        m_selectionAnimation->start();
+    } else if (type == QAbstract3DGraph::ElementSeries) {
+        QString text = "Surface (";
+        QSurface3DSeries *series = m_graph->selectedSeries();
+        if (series) {
+            QPoint point = series->selectedPoint();
+            QString posStr;
+            posStr.setNum(point.x());
+            text.append(posStr);
+            text.append(", ");
+            posStr.setNum(point.y());
+            text.append(posStr);
+        }
+        text.append(")");
+        m_textField->setText(text);
+    } else if (type > QAbstract3DGraph::ElementSeries
+               && type < QAbstract3DGraph::ElementCustomItem) {
+        int index = m_graph->selectedLabelIndex();
+        QString text;
+        if (type == QAbstract3DGraph::ElementAxisXLabel)
+            text.append("Axis X label: ");
+        else if (type == QAbstract3DGraph::ElementAxisYLabel)
+            text.append("Axis Y label: ");
+        else
+            text.append("Axis Z label: ");
+        text.append(QString::number(index));
+        m_textField->setText(text);
+    } else {
+        m_textField->setText("Nothing");
+    }
+}
+
+void SurfaceGraphModifier::resetSelection() {
+    m_selectionAnimation->stop();
+    if (m_previouslyAnimatedItem)
+        m_previouslyAnimatedItem->setScaling(m_previousScaling);
+    m_previouslyAnimatedItem = nullptr;
+}
+
+void SurfaceGraphModifier::changePauseState(const Qt::CheckState state) {
+}

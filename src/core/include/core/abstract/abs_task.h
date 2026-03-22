@@ -6,6 +6,7 @@
 
 class ITask {
 public:
+    virtual ~ITask() = default;
     virtual void start() = 0;
     virtual void stop() = 0;
 };
