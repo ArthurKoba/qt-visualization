@@ -63,11 +63,15 @@ private:
 class Analyzer final : public AbstractTask {
 public:
     typedef std::function<void(void)> update_handler_t;
+    typedef std::function<void(const std::vector<float> &window)> on_update_window_function_handler_t;
+    typedef std::function<void(const std::vector<float> &window)> on_samples_after_window_function_handler_t;
 protected:
     QElapsedTimer timer;
     FFT fft;
     FFT fft2;
     update_handler_t _handler = nullptr;
+    on_update_window_function_handler_t _update_window_function_handler = nullptr;
+    on_samples_after_window_function_handler_t _samples_after_window_function_handler = nullptr;
     float _smoothing_percent = 0;
     bool _need_update = false;
     size_t _sample_rate{};
@@ -80,6 +84,7 @@ protected:
 
 public:
     Samples samples;
+    std::vector<float> window;
     Amplitudes amplitudes;
     Amplitudes amplitudes_test;
     SpectralWhitening whitening;
@@ -91,6 +96,8 @@ public:
     void add_samples(const std::vector<float>& left, const std::vector<float> &right);
 
     void set_update_handler(update_handler_t handler);
+    void set_update_window_function_handler(on_update_window_function_handler_t handler);
+    void set_samples_after_window_function_handler(on_samples_after_window_function_handler_t handler);
 
     void update_sample_rate(size_t sample_rate);
 
@@ -98,6 +105,10 @@ public:
 
     static void generate_bark_scale(float *scale_ptr, size_t scale_size, float frequency_step);
     static void generate_volume_scale(float *scale_ptr, size_t scale_size, float frequency_step);
+
+    void generate_window();
+    void use_window(std::vector<float> &samples_);
+
 };
 
 

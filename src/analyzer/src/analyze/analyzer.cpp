@@ -2,6 +2,8 @@
 
 #include <QDebug>
 
+#include "dsps_wind_hann.h"
+
 Samples::Samples(size_t size) : left(size), right(size) {
 }
 
@@ -86,7 +88,9 @@ uint64_t Analyzer::_task() {
             std::vector<float> mel_amplitudes;
             temp_amplitudes.resize(amplitudes.left.size(), 0.0f);
             mel_amplitudes.resize(80, 0.0f);
-            auto status = fft.run(samples.left.get_window(), temp_amplitudes);
+            std::vector<float> samples_ = samples.left.get_window();
+            use_window(samples_);
+            const auto status = fft.run(samples_, temp_amplitudes);
 
             if (_sample_rate and temp_amplitudes.size() == _bark_scale.size()) {
                 for (int i = 0; i < temp_amplitudes.size(); ++i) {
@@ -195,6 +199,14 @@ void Analyzer::set_update_handler(update_handler_t handler) {
     _handler = std::move(handler);
 }
 
+void Analyzer::set_update_window_function_handler(on_update_window_function_handler_t handler) {
+    _update_window_function_handler = std::move(handler);
+}
+
+void Analyzer::set_samples_after_window_function_handler(on_samples_after_window_function_handler_t handler) {
+    _samples_after_window_function_handler = std::move(handler);
+}
+
 void Analyzer::generate_bark_scale(float *scale_ptr, size_t scale_size, float frequency_step) {
     float base;
     for (int i = 0; i < scale_size; i++) {
@@ -237,5 +249,24 @@ void Analyzer::generate_volume_scale(float *scale_ptr, size_t scale_size, float 
 
         // перевод dB -> линейный коэффициент
         scale_ptr[i] = powf(10.0f, A / 20.0f);
+    }
+}
+
+void Analyzer::generate_window() {
+    window.resize(_samples_size);
+    dsps_wind_hann_f32(window.data(), window.size());
+    if (_update_window_function_handler) {
+        _update_window_function_handler(window);
+    }
+}
+
+void Analyzer::use_window(std::vector<float> &samples_) {
+    if (samples_.empty()) return;
+    if (window.size() not_eq samples_.size()) generate_window();
+    for (size_t i = 0; i < samples_.size(); ++i) {
+        samples_[i] = window[i] * samples_[i];
+    }
+    if (_samples_after_window_function_handler) {
+        _samples_after_window_function_handler(samples_);
     }
 }
