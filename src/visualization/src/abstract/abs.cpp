@@ -36,7 +36,7 @@ void AbstractChartView::_init_series() {
     update(initData);
 }
 
-void AbstractChartView::update(std::vector<float> &data) {
+void AbstractChartView::update(const std::vector<float> &data) {
 
     if (data.size() not_eq _data.size()) {
         _data.resize(data.size(), 0);

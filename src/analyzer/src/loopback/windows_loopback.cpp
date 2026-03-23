@@ -79,11 +79,7 @@ uint64_t WASAPILoopback::_task() {
     uint32_t frames;
     DWORD flags;
 
-    while (_thread_handle) {
-        if (need_stop) {
-            need_stop = false;
-            return 0;
-        }
+    while (_thread_handle and not need_stop) {
         HRESULT hr = pCaptureClient->GetNextPacketSize(&packet_size);
         if (FAILED(hr)) {
             return _show_error_and_return("IAudioCaptureClient::GetNextPacketSize failed: hr = 0x%08lx\n", hr);
@@ -107,6 +103,10 @@ uint64_t WASAPILoopback::_task() {
                 return _show_error_and_return("IAudioCaptureClient::ReleaseBuffer failed: hr = 0x%08lx\n", hr);
             }
         }
+    }
+    if (need_stop) {
+        need_stop = false;
+        return 0;
     }
     return 1;
 }

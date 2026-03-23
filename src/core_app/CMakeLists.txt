@@ -42,8 +42,7 @@ FetchContent_MakeAvailable(QtNodes)
 target_link_libraries(core_app
         Qt6::Core
         Qt6::Widgets
-#        Qt6::Network
-#        aggregator-library
-#        core
         QtNodes
+        analyzer
+        visualization
 )

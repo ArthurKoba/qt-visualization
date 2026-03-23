@@ -2,29 +2,27 @@
 
 #include <QDebug>
 
-Samples::Samples(size_t size) : left(size), right(size) {}
+Samples::Samples(size_t size) : left(size), right(size) {
+}
 
 Amplitudes::Amplitudes(size_t size) {
     left.resize(size, 0);
     right.resize(size, 0);
 }
 
-static float hz_to_mel(float f)
-{
+static float hz_to_mel(float f) {
     return 2595.0f * log10f(1.0f + f / 700.0f);
 }
 
-static float mel_to_hz(float m)
-{
+static float mel_to_hz(float m) {
     return 700.0f * (powf(10.0f, m / 2595.0f) - 1.0f);
 }
 
 void fft_to_mel(
-        const std::vector<float>& temp_amplitudes,
-        size_t sample_rate,
-        std::vector<float>& mel_output,
-        size_t mel_bands = 40)
-{
+    const std::vector<float> &temp_amplitudes,
+    size_t sample_rate,
+    std::vector<float> &mel_output,
+    size_t mel_bands = 40) {
     mel_output.resize(mel_bands);
     const size_t fft_bins = temp_amplitudes.size();
     const size_t N = fft_bins * 2;
@@ -37,55 +35,46 @@ void fft_to_mel(
 
     std::vector<float> mel_points(mel_bands + 2);
 
-    for (size_t i = 0; i < mel_bands + 2; ++i)
-    {
+    for (size_t i = 0; i < mel_bands + 2; ++i) {
         mel_points[i] = mel_min +
                         (mel_max - mel_min) * i / (mel_bands + 1);
     }
 
     std::vector<int> bin(mel_bands + 2);
 
-    for (size_t i = 0; i < mel_bands + 2; ++i)
-    {
+    for (size_t i = 0; i < mel_bands + 2; ++i) {
         float f = mel_to_hz(mel_points[i]);
         bin[i] = static_cast<int>(floor((N + 1) * f / sample_rate));
-
     }
 
     mel_output.assign(mel_bands, 0.0f);
 
-    for (size_t m = 1; m <= mel_bands; ++m)
-    {
+    for (size_t m = 1; m <= mel_bands; ++m) {
         int left = bin[m - 1];
         int center = bin[m];
         int right = bin[m + 1];
 
         float energy = 0.0f;
 
-        for (int k = left; k < center; ++k)
-        {
+        for (int k = left; k < center; ++k) {
             float w = float(k - left) / (center - left);
             energy += temp_amplitudes[k] * w;
         }
 
-        for (int k = center; k < right; ++k)
-        {
+        for (int k = center; k < right; ++k) {
             float w = float(right - k) / (right - center);
             energy += temp_amplitudes[k] * w;
         }
 
         mel_output[m - 1] = energy;
-
     }
-//    float max_val = *std::max_element(mel_output.begin(), mel_output.end());
-//
-//    for (auto& v : mel_output)
-//    {
-//        v = 20.0f * log10f((v + 1e-9f) / max_val);
-//    }
-
+    //    float max_val = *std::max_element(mel_output.begin(), mel_output.end());
+    //
+    //    for (auto& v : mel_output)
+    //    {
+    //        v = 20.0f * log10f((v + 1e-9f) / max_val);
+    //    }
 }
-
 
 
 uint64_t Analyzer::_task() {
@@ -122,33 +111,32 @@ uint64_t Analyzer::_task() {
                 amplitudes_test.left[i] *= 2;
             }
 
-//            whitening.process(mel_amplitudes,
-//                              amplitudes_test.left);
-//            for (int i = 0; i < amplitudes_test.left.size(); ++i) {
-//                amplitudes_test.left[i] = temp_amplitudes[i];
-//            }
+            //            whitening.process(mel_amplitudes,
+            //                              amplitudes_test.left);
+            //            for (int i = 0; i < amplitudes_test.left.size(); ++i) {
+            //                amplitudes_test.left[i] = temp_amplitudes[i];
+            //            }
 
-//            if (_sample_rate and temp_amplitudes.size() == _bark_scale.size()) {
-//                for (int i = 0; i < temp_amplitudes.size(); ++i) {
-//                    temp_amplitudes[i] *= _bark_scale[i];
-//                }
-//            }
-//            if (_smoothing_percent > 0 and _smoothing_percent < 100) {
-//                float new_mul = 100 - _smoothing_percent;
-//                for (int i = 0; i < amplitudes.left.size(); ++i) {
-//                    amplitudes.left[i] = (amplitudes.left[i] * _smoothing_percent + temp_amplitudes[i] * new_mul) / 100;
-//                }
-//            } else {
-//                for (int i = 0; i < amplitudes.left.size(); ++i) {
-//                amplitudes.left[i] = temp_amplitudes[i];
-//                }
-//            }
-//            for (int i = 0; i < amplitudes.left.size(); ++i) {
-//                if (amplitudes.left[i] < 0 or std::isinf(amplitudes.left[i]) or std::isnan(amplitudes.left[i])) {
-//                    amplitudes.left[i] = 0;
-//                }
-//            }
-
+            //            if (_sample_rate and temp_amplitudes.size() == _bark_scale.size()) {
+            //                for (int i = 0; i < temp_amplitudes.size(); ++i) {
+            //                    temp_amplitudes[i] *= _bark_scale[i];
+            //                }
+            //            }
+            //            if (_smoothing_percent > 0 and _smoothing_percent < 100) {
+            //                float new_mul = 100 - _smoothing_percent;
+            //                for (int i = 0; i < amplitudes.left.size(); ++i) {
+            //                    amplitudes.left[i] = (amplitudes.left[i] * _smoothing_percent + temp_amplitudes[i] * new_mul) / 100;
+            //                }
+            //            } else {
+            //                for (int i = 0; i < amplitudes.left.size(); ++i) {
+            //                amplitudes.left[i] = temp_amplitudes[i];
+            //                }
+            //            }
+            //            for (int i = 0; i < amplitudes.left.size(); ++i) {
+            //                if (amplitudes.left[i] < 0 or std::isinf(amplitudes.left[i]) or std::isnan(amplitudes.left[i])) {
+            //                    amplitudes.left[i] = 0;
+            //                }
+            //            }
 
 
             if (status not_eq FFT::SUCCESS) {
@@ -172,7 +160,7 @@ Analyzer::Analyzer() {
     _sample_rate = 0;
     _amplitudes_size = _samples_size / 2;
     whitening = SpectralWhitening(80);
-//    _smoothing_percent = 60;
+    //    _smoothing_percent = 60;
 
     samples = Samples(_samples_size);
     amplitudes = Amplitudes(_amplitudes_size);
@@ -184,7 +172,14 @@ Analyzer::Analyzer() {
     if (status not_eq FFT::SUCCESS) {
         qCritical("Failed init fft");
     }
+}
 
+std::vector<float> Analyzer::average_channels(const std::vector<float> &left, const std::vector<float> &right) {
+    std::vector<float> result(left.size());
+    for (size_t i = 0; i < left.size(); ++i) {
+        result[i] = (left[i] + right[i]) / 2.0f;
+    }
+    return result;
 }
 
 void Analyzer::add_samples(const std::vector<float> &left, const std::vector<float> &right) {
@@ -220,13 +215,10 @@ float Analyzer::get_freq_step() {
 }
 
 void Analyzer::generate_volume_scale(float *scale_ptr, size_t scale_size, float frequency_step) {
-
-    for (size_t i = 0; i < scale_size; ++i)
-    {
+    for (size_t i = 0; i < scale_size; ++i) {
         float f = i * frequency_step;
 
-        if (f <= 0.0f)
-        {
+        if (f <= 0.0f) {
             scale_ptr[i] = 0.0f;
             continue;
         }
@@ -246,5 +238,4 @@ void Analyzer::generate_volume_scale(float *scale_ptr, size_t scale_size, float 
         // перевод dB -> линейный коэффициент
         scale_ptr[i] = powf(10.0f, A / 20.0f);
     }
-
 }

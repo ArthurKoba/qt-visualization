@@ -18,7 +18,7 @@ public:
 private:
     QString _config_path;
     
-    static void _parse_aggregator_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
+    static void _parse_core_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
     static void _parse_ui_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
     static void _parse_diagram_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
     

@@ -5,16 +5,32 @@
 #include <QtNodes/NodeDelegateModelRegistry>
 #include <QJsonObject>
 
+#include "analyzer/analyze/analyzer.h"
+#include "analyzer/analyze/spectrogram.h"
+#include "analyzer/loopback/windows_loopback.h"
+
 using node_delegate_model_registry_t = std::shared_ptr<QtNodes::NodeDelegateModelRegistry>;
 using data_flow_graph_model_t = std::shared_ptr<QtNodes::DataFlowGraphModel>;
 
 struct UIApplicationConfig {
-    bool move_to_primary_screen_on_start;
-    bool autosave_enabled;
+    bool move_to_primary_screen_on_start = false;
+    bool autosave_enabled = true;
+    bool show_raw_samples = false;
+    bool show_samples = false;
+    bool show_samples_after_window_function = false;
+    bool show_window_function = false;
+    bool show_amplitudes = true;
+    bool show_test_amplitudes = true;
+    bool show_surface = true;
+};
+
+struct FileCoreApplicationConfig {
+    bool run_loopback = true;
+    bool run_analyser = true;
 };
 
 struct FileSaveApplicationConfig {
-    bool enable_aggregator = false;
+    FileCoreApplicationConfig core;
     UIApplicationConfig ui{};
     QJsonObject scene_graph;
 };
@@ -28,8 +44,9 @@ struct CoreApplicationContext {
     FileSaveApplicationConfig file_configs;
     node_delegate_model_registry_t delegate_model_registry;
     data_flow_graph_model_t data_flow_graph;
-    // AggregatorClient* _aggregator_client = nullptr;
+    Analyzer *analyzer = nullptr;
+    Spectrogram *spectrogram = nullptr;
+    audio::loopback::WASAPILoopback *loopback = nullptr;
 };
-
 
 #endif // CORE_APP_TYPES_H

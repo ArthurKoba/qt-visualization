@@ -86,6 +86,8 @@ public:
 
     Analyzer();
 
+    static std::vector<float> average_channels(const std::vector<float> &left, const std::vector<float> &right);
+
     void add_samples(const std::vector<float>& left, const std::vector<float> &right);
 
     void set_update_handler(update_handler_t handler);

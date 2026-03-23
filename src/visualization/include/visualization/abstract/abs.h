@@ -12,7 +12,7 @@ public:
     void set_auto_resizing(bool value);
     void set_auto_gain(bool value, float min_max = 100.0f, float min_min = -100.0f, size_t speed = 10);
     void set_range(qreal min, qreal max);
-    void update(std::vector<float> &data);
+    void update(const std::vector<float> &data);
 protected:
     std::vector<float> _data;
     bool _need_update = false;
