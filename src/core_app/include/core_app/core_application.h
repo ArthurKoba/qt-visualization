@@ -34,15 +34,19 @@ public Q_SLOTS:
 Q_SIGNALS:
     void on_config_updated();
 
-    void raw_samples_ready(const std::vector<float> &averaged_samples);
+    void raw_samples_ready(const std::vector<float> &samples);
 
-    void processed_samples_ready(const std::vector<float> &averaged_samples);
+    void samples_ready(const std::vector<float> &samples);
 
-    void amplitudes_ready(const std::vector<float> &averaged_amplitudes);
+    void samples_after_window_function_ready(const std::vector<float> &samples);
 
-    void test_amplitudes_ready(const std::vector<float> &averaged_amplitudes);
+    void window_function_ready(const std::vector<float> &window);
 
-    void spectrogram_updated(const std::vector<std::vector<float> > &spectrogram_data);
+    void amplitudes_ready(const std::vector<float> &amplitudes);
+
+    void test_amplitudes_ready(const std::vector<float> &test_amplitudes);
+
+    void spectrogram_updated(const std::vector<std::vector<float> > &spectrogram);
 
     void sample_rate_changed(uint32_t sample_rate);
 

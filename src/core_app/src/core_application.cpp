@@ -100,23 +100,25 @@ void CoreApplication::start_analyzer() {
 
     _ctx.analyzer->set_update_handler([this]() {
         // Усреднение амплитуд
-        auto avg_amplitudes = Analyzer::average_channels(
-            _ctx.analyzer->amplitudes.left,
-            _ctx.analyzer->amplitudes.right
-        );
-        emit amplitudes_ready(avg_amplitudes);
+        emit amplitudes_ready(_ctx.analyzer->amplitudes.left);
 
         // Усреднение тестовых амплитуд (Mel шкала)
-        auto avg_test = Analyzer::average_channels(
-            _ctx.analyzer->amplitudes_test.left,
-            _ctx.analyzer->amplitudes_test.right
-        );
-        emit test_amplitudes_ready(avg_test);
+        emit test_amplitudes_ready(_ctx.analyzer->amplitudes_test.left);
 
         // Спектрограмма (только левый канал)
         if (_ctx.spectrogram) {
             _ctx.spectrogram->push(_ctx.analyzer->amplitudes_test.left);
             emit spectrogram_updated(_ctx.spectrogram->get_vector_spectrogram());
+        }
+    });
+    _ctx.analyzer->set_update_window_function_handler([this](const std::vector<float> &window) {
+        emit window_function_ready(window);
+    });
+
+    _ctx.analyzer->set_samples_after_window_function_handler([this](const std::vector<float> &samples) {
+        emit samples_after_window_function_ready(samples);
+        if (_ctx.analyzer and not _ctx.analyzer->window.empty()) {
+            emit window_function_ready(_ctx.analyzer->window);
         }
     });
 
@@ -162,6 +164,7 @@ void CoreApplication::start_loopback() {
 
         if (_ctx.analyzer) {
             _ctx.analyzer->add_samples(left, right);
+            emit samples_ready(_ctx.analyzer->samples.left.get_window());
         }
     });
 

@@ -25,21 +25,15 @@ MainWindow::MainWindow(CoreApplication &application) : _application(application)
     connect(&_application, &CoreApplication::sample_rate_changed, this, &MainWindow::on_sample_rate_changed);
 
     connect(&_application, &CoreApplication::raw_samples_ready, this, &MainWindow::on_raw_samples_ready);
-    connect(&_application, &CoreApplication::processed_samples_ready, this, &MainWindow::on_processed_samples_ready);
+    connect(&_application, &CoreApplication::samples_ready, this, &MainWindow::on_samples_ready);
+    connect(&_application, &CoreApplication::samples_after_window_function_ready, this, &MainWindow::on_samples_after_window_function_ready);
+    connect(&_application, &CoreApplication::window_function_ready, this, &MainWindow::on_window_function_ready);
     connect(&_application, &CoreApplication::amplitudes_ready, this, &MainWindow::on_amplitudes_ready);
     connect(&_application, &CoreApplication::test_amplitudes_ready, this, &MainWindow::on_test_amplitudes_ready);
     connect(&_application, &CoreApplication::spectrogram_updated, this, &MainWindow::on_spectrogram_updated);
 }
 
-MainWindow::~MainWindow() {
-    for (auto *chart: _chart_views) {
-        delete chart;
-    }
-    _chart_views.clear();
-    if (_surface_view) {
-        delete _surface_view;
-    }
-}
+MainWindow::~MainWindow() = default;
 
 void MainWindow::setup_ui() {
     auto *menu = menuBar()->addMenu("File");
@@ -50,17 +44,74 @@ void MainWindow::setup_ui() {
 
     _tab_widget = new QTabWidget(this);
 
-    // Вкладка редактора схем
-    // _tab_widget->addTab(new SchemeEditorWidget(_application._ctx, this), "Scheme Editor");
+    // Создаем все графики один раз
 
-    // Вкладка с графиками (контейнер для динамических графиков)
-    _charts_splitter = new QSplitter(Qt::Vertical);
-    _tab_widget->addTab(_charts_splitter, "Charts");
+    // Raw Samples
+    _raw_samples_chart = new LineChartView();
+    _raw_samples_chart->chart()->setTitle("Raw Samples");
+    _raw_samples_chart->set_range(-1, 1);
+    _raw_samples_chart->set_auto_resizing(true);
+    _raw_samples_chart->set_auto_gain(true, 1, -1);
+    _raw_samples_tab_index = _tab_widget->addTab(_raw_samples_chart, "Raw Samples");
 
-    // Вкладка настроек
+    // Samples
+    _samples_chart = new LineChartView();
+    _samples_chart->chart()->setTitle("Samples");
+    _samples_chart->set_range(-1, 1);
+    _samples_chart->set_auto_resizing(true);
+    _samples_chart->set_auto_gain(true, 1, -1);
+    _samples_tab_index = _tab_widget->addTab(_samples_chart, "Samples");
+
+    // Samples after window function
+    _samples_after_window_function_chart = new LineChartView();
+    _samples_after_window_function_chart->chart()->setTitle("Samples after window function");
+    _samples_after_window_function_chart->set_range(-1, 1);
+    _samples_after_window_function_chart->set_auto_resizing(true);
+    _samples_after_window_function_chart->set_auto_gain(true, 1, -1);
+    _samples_after_window_function_tab_index = _tab_widget->addTab(_samples_after_window_function_chart, "Samples after window function");
+
+    //  window function
+    _window_function_chart = new LineChartView();
+    _window_function_chart->chart()->setTitle("Window function values");
+    _window_function_chart->set_range(-0.2, 1.2);
+    if (_application._ctx.analyzer and _application._ctx.analyzer->window.size()) {
+        _amplitudes_chart->update( _application._ctx.analyzer->window );
+    }
+    _window_function_tab_index = _tab_widget->addTab(_window_function_chart, "Window function");
+
+    // Amplitudes (FFT)
+    _amplitudes_chart = new FreqChartView();
+    _amplitudes_chart->chart()->setTitle("Amplitudes FFT");
+    _amplitudes_chart->set_range(0, 1);
+    _amplitudes_chart->set_auto_resizing(true);
+    _amplitudes_chart->set_auto_gain(true, 1, 0);
+
+    _amplitudes_tab_index = _tab_widget->addTab(_amplitudes_chart, "Amplitudes (FFT)");
+
+    // Test Amplitudes (Mel)
+    _test_amplitudes_chart = new LineChartView();
+    _test_amplitudes_chart->chart()->setTitle("Test Amplitudes (Mel)");
+    _test_amplitudes_chart->set_range(0, 1);
+    _test_amplitudes_chart->set_auto_resizing(true);
+    _test_amplitudes_chart->set_auto_gain(true, 1, 0);
+    _test_amplitudes_tab_index = _tab_widget->addTab(_test_amplitudes_chart, "Test Amplitudes (Mel)");
+
+    // 3D Surface
+    _surface_view = new SurfaceGraph(this);
+    const QSize screenSize = screen()->size();
+    const QSize minimumGraphSize{
+        screenSize.width() / 2,
+        qRound(screenSize.height() / 1.75)
+    };
+    if (!_surface_view->initialize(minimumGraphSize, screenSize)) {
+        qWarning("Couldn't initialize the OpenGL context.");
+    }
+    _surface_tab_index = _tab_widget->addTab(_surface_view, "3D Surface");
+
+    // Settings
     const auto settings_widget = new SettingsWidget(_application._ctx, this);
     connect(settings_widget, &SettingsWidget::on_config_changed, this, &MainWindow::on_config_updated);
-    connect(settings_widget, &SettingsWidget::on_rebuild_charts, this, &MainWindow::on_rebuild_charts);
+    connect(settings_widget, &SettingsWidget::on_rebuild_charts, this, &MainWindow::on_update_chart_visibility);
     connect(settings_widget, &SettingsWidget::start_loopback_requested, this, &MainWindow::start_loopback_requested);
     connect(settings_widget, &SettingsWidget::stop_loopback_requested, this, &MainWindow::stop_loopback_requested);
     connect(settings_widget, &SettingsWidget::start_analyzer_requested, this, &MainWindow::start_analyzer_requested);
@@ -69,141 +120,62 @@ void MainWindow::setup_ui() {
 
     setCentralWidget(_tab_widget);
 
-    // Инициализируем графики на основе текущего конфига
-    rebuild_charts_from_config(_application._ctx.file_configs.ui);
+    // Инициализируем видимость графиков на основе текущего конфига
+    update_chart_visibility(_application._ctx.file_configs.ui);
+
+    qCInfo(core_app_window, "UI setup completed");
 }
 
-void MainWindow::rebuild_charts_from_config(const UIApplicationConfig &config) {
-    // Очищаем старые графики
-    for (auto *chart: _chart_views) {
-        chart->setParent(nullptr);
-        delete chart;
-    }
-    _chart_views.clear();
+void MainWindow::update_chart_visibility(const UIApplicationConfig &config) {
+    _tab_widget->setTabVisible(_raw_samples_tab_index, config.show_raw_samples);
+    _tab_widget->setTabVisible(_samples_tab_index, config.show_samples);
+    _tab_widget->setTabVisible(_samples_after_window_function_tab_index, config.show_samples_after_window_function);
+    _tab_widget->setTabVisible(_window_function_tab_index, config.show_window_function);
+    _tab_widget->setTabVisible(_amplitudes_tab_index, config.show_amplitudes);
+    _tab_widget->setTabVisible(_test_amplitudes_tab_index, config.show_test_amplitudes);
+    _tab_widget->setTabVisible(_surface_tab_index, config.show_surface);
 
-    if (_surface_view) {
-        _surface_view->setParent(nullptr);
-        delete _surface_view;
-        _surface_view = nullptr;
-    }
-
-    // Создаем новые графики в зависимости от конфига
-    if (config.show_raw_samples) {
-        create_chart_tab("raw_samples", "Raw Samples", ChartType::Line);
-    }
-
-    if (config.show_samples) {
-        create_chart_tab("processed_samples", "Processed Samples", ChartType::Line);
-    }
-
-    if (config.show_amplitudes) {
-        create_chart_tab("amplitudes", "Amplitudes FFT", ChartType::Frequency);
-    }
-
-    if (config.show_test_amplitudes) {
-        create_chart_tab("test_amplitudes", "Test Amplitudes (Mel)", ChartType::Line);
-    }
-
-    if (config.show_surface) {
-        _surface_view = new SurfaceGraph(this);
-        const QSize screenSize = screen()->size();
-        const QSize minimumGraphSize{
-            screenSize.width() / 2,
-            qRound(screenSize.height() / 1.75)
-        };
-        if (!_surface_view->initialize(minimumGraphSize, screenSize)) {
-            qWarning("Couldn't initialize the OpenGL context.");
-        }
-        _charts_splitter->addWidget(_surface_view);
-    }
-
-    qCInfo(core_app_window, "Charts rebuilt from config");
+    qCDebug(core_app_window, "Chart visibility updated");
 }
 
-void MainWindow::create_chart_tab(const QString &chart_name,
-                                  const QString &title,
-                                  ChartType type) {
-    AbstractChartView *chart = nullptr;
-
-    switch (type) {
-        case ChartType::Line:
-            chart = new LineChartView();
-            chart->set_range(-1, 1);
-            chart->set_auto_resizing(true);
-            chart->set_auto_gain(true, 1, -1);
-            break;
-
-        case ChartType::Bar:
-            chart = new BarChartView();
-            chart->set_range(0, 255);
-            chart->set_auto_resizing(true);
-            chart->set_auto_gain(true, 255, 0, 2);
-            break;
-
-        case ChartType::Frequency:
-            chart = new FreqChartView();
-            chart->set_range(0, 1);
-            chart->set_auto_resizing(true);
-            chart->set_auto_gain(true, 1, 0);
-            // Обновляем частотный шаг, если analyzer готов
-            if (_application._ctx.analyzer) {
-                reinterpret_cast<FreqChartView *>(chart)->update_freq_step(
-                    _application._ctx.analyzer->get_freq_step()
-                );
-            }
-            break;
-    }
-
-    if (chart) {
-        chart->chart()->setTitle(title);
-        _chart_views[chart_name] = chart;
-        _charts_splitter->addWidget(chart);
-        qCDebug(core_app_window, "Created chart: %s", qPrintable(chart_name));
-    }
-}
-
-void MainWindow::remove_chart_tab(const QString &chart_name) {
-    auto it = _chart_views.find(chart_name);
-    if (it != _chart_views.end()) {
-        (*it)->setParent(nullptr);
-        delete *it;
-        _chart_views.erase(it);
-        qCDebug(core_app_window, "Removed chart: %s", qPrintable(chart_name));
-    }
-}
-
-void MainWindow::on_rebuild_charts() {
-    rebuild_charts_from_config(_application._ctx.file_configs.ui);
+void MainWindow::on_update_chart_visibility() {
+    update_chart_visibility(_application._ctx.file_configs.ui);
 }
 
 void MainWindow::on_raw_samples_ready(const std::vector<float> &data) {
-    auto it = _chart_views.find("raw_samples");
-    if (it != _chart_views.end()) {
-        it.value()->update(data);
+    if (_raw_samples_chart) {
+        _raw_samples_chart->update(data);
     }
 }
 
-void MainWindow::on_processed_samples_ready(const std::vector<float> &data) {
-    const auto it = _chart_views.find("processed_samples");
-    if (it != _chart_views.end()) {
-        std::vector<float> std_data(data.begin(), data.end());
-        it.value()->update(std_data);
+void MainWindow::on_samples_ready(const std::vector<float> &data) {
+    if (_samples_chart) {
+        _samples_chart->update(data);
+    }
+}
+
+void MainWindow::on_samples_after_window_function_ready(const std::vector<float> &data) {
+    if (_samples_after_window_function_chart) {
+        _samples_after_window_function_chart->update(data);
+    }
+}
+
+void MainWindow::on_window_function_ready(const std::vector<float> &data) {
+    if (_window_function_chart) {
+        _window_function_chart->update(data);
     }
 }
 
 void MainWindow::on_amplitudes_ready(const std::vector<float> &data) {
-    const auto it = _chart_views.find("amplitudes");
-    if (it != _chart_views.end()) {
-        std::vector<float> std_data(data.begin(), data.end());
-        it.value()->update(std_data);
+    if (_amplitudes_chart) {
+        reinterpret_cast<FreqChartView *>(_amplitudes_chart)->update_freq_step( _application._ctx.analyzer->get_freq_step() );
+        _amplitudes_chart->update(data);
     }
 }
 
 void MainWindow::on_test_amplitudes_ready(const std::vector<float> &data) {
-    const auto it = _chart_views.find("test_amplitudes");
-    if (it != _chart_views.end()) {
-        std::vector<float> std_data(data.begin(), data.end());
-        it.value()->update(std_data);
+    if (_test_amplitudes_chart) {
+        _test_amplitudes_chart->update(data);
     }
 }
 
@@ -214,12 +186,9 @@ void MainWindow::on_spectrogram_updated(const std::vector<std::vector<float> > &
 }
 
 void MainWindow::on_sample_rate_changed(uint32_t sample_rate) {
-    auto it = _chart_views.find("amplitudes");
-    if (it != _chart_views.end()) {
-        auto *freq_chart = reinterpret_cast<FreqChartView *>(it.value());
-        if (_application._ctx.analyzer) {
-            freq_chart->update_freq_step(_application._ctx.analyzer->get_freq_step());
-        }
+    if (_amplitudes_chart && _application._ctx.analyzer) {
+        auto *freq_chart = reinterpret_cast<FreqChartView *>(_amplitudes_chart);
+        freq_chart->update_freq_step(_application._ctx.analyzer->get_freq_step());
     }
     qCDebug(core_app_window, "Sample rate changed: %u Hz", sample_rate);
 }

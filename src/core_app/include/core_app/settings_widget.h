@@ -43,9 +43,10 @@ private:
     QCheckBox* _show_test_amplitudes_cb = nullptr;
     QCheckBox* _show_surface_cb = nullptr;
 
-    void setup_ui();
-    void connect_signals();
-    void load_current_config() const;
+    void _setup_ui();
+    void _connect_signals();
+    void _load_current_config() const;
+    void _on_config_change(bool force_save = false);
 };
 
 #endif // CORE_APP_SETTINGS_WIDGET_H

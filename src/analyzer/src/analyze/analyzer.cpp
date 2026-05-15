@@ -98,23 +98,21 @@ uint64_t Analyzer::_task() {
                 }
             }
 
-            for (int i = 0; i < amplitudes.left.size(); ++i) {
-                amplitudes.left[i] = temp_amplitudes[i];
+            // for (int i = 0; i < amplitudes.left.size(); ++i) {
+            //     amplitudes.left[i] = temp_amplitudes[i];
+            // }
+            for (int i = 0; i < 100; ++i) {
+                amplitudes_test.left[i] = temp_amplitudes[i] * 10;
             }
 
+            // fft_to_mel(temp_amplitudes,
+            //            _sample_rate,
+            //            amplitudes_test.left,
+            //            30);
 
-            fft_to_mel(temp_amplitudes,
-                       _sample_rate,
-                       amplitudes_test.left,
-                       150);
-
-            for (int i = 0; i < amplitudes.left.size(); ++i) {
-                amplitudes.left[i] *= float(i);
-            }
-            for (int i = 0; i < 10; ++i) {
-                amplitudes_test.left[i] *= 2;
-            }
-
+            // for (int i = 0; i < 10; ++i) {
+                // amplitudes_test.left[i] *= 3;
+            // }
             //            whitening.process(mel_amplitudes,
             //                              amplitudes_test.left);
             //            for (int i = 0; i < amplitudes_test.left.size(); ++i) {

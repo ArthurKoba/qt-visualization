@@ -26,9 +26,8 @@ void FreqChartView::_on_updated_data_size(const size_t new_size) {
 }
 
 void FreqChartView::update_freq_step(const qreal freq_step) {
-    if (freq_step and freq_step > 1) {
-        _freq_step = freq_step;
-        _freq_axis.setRange(0, _freq_step * static_cast<qreal>(_data.size()));
-        _freq_axis.show();
-    }
+    if (freq_step == _freq_step or freq_step < 1) return;
+    _freq_step = freq_step;
+    _freq_axis.setRange(0, _freq_step * static_cast<qreal>(_data.size()));
+    _freq_axis.show();
 }

@@ -4,7 +4,7 @@
 #include "visualization/charts/bar.h"
 #include "visualization/charts/freq.h"
 
-Application::Application(int &argc, char **argv, int flags) : QApplication(argc, argv, flags) {
+Application::Application(int &argc, char **argv, const int flags) : QApplication(argc, argv, flags) {
     if (_cfg.run_analyser) {
         _run_analyzer();
     }
@@ -55,7 +55,7 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
 
     if (receiver and (_cfg.show_serial_samples or _cfg.show_serial_audio_spectre or _cfg.show_serial_fast_amplitudes)) {
         receiver->set_packet_handler([](BDSP::packet_context_t &packet_context, void *packet_handler_context) {
-            auto &app = *reinterpret_cast<Application *>(packet_handler_context);
+            const auto &app = *reinterpret_cast<Application *>(packet_handler_context);
 
             if (packet_context.packet_id == 1 and app.serialSamplesView) {
                 size_t samples_size = packet_context.size;
@@ -72,7 +72,7 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
                 spectre_size = 300;
                 //                spectre_size /= 2;
                 std::vector<float> spectre;
-                auto *packet_samples = reinterpret_cast<uint8_t *>(packet_context.data_ptr);
+                const auto *packet_samples = reinterpret_cast<uint8_t *>(packet_context.data_ptr);
                 for (int i = 0; i < spectre_size; ++i) {
                     spectre.push_back(float(packet_samples[i]));
                 }
@@ -81,18 +81,18 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
             } else if (packet_context.packet_id == 3 and app.serialFastAmplitudesView) {
                 std::vector<float> amplitudes;
                 amplitudes.resize(packet_context.size);
-                auto *data = reinterpret_cast<uint8_t *>(packet_context.data_ptr);
+                const auto *data = reinterpret_cast<uint8_t *>(packet_context.data_ptr);
                 for (int i = 0; i < amplitudes.size(); ++i) {
-                    amplitudes[i] = float(data[i]);
+                    amplitudes[i] = static_cast<float>(data[i]);
                 }
                 app.serialFastAmplitudesView->update(amplitudes);
                 return;
             } else if (packet_context.packet_id == 4 and app.serialFastAmplitudesView) {
                 std::vector<float> amplitudes;
                 amplitudes.resize(packet_context.size / 4);
-                auto *data = reinterpret_cast<float *>(packet_context.data_ptr);
+                const auto *data = reinterpret_cast<float *>(packet_context.data_ptr);
                 for (int i = 0; i < amplitudes.size(); ++i) {
-                    amplitudes[i] = float(data[i]);
+                    amplitudes[i] = static_cast<float>(data[i]);
                 }
                 app.serialFastAmplitudesView->update(amplitudes);
                 return;
@@ -158,7 +158,7 @@ Application::Application(int &argc, char **argv, int flags) : QApplication(argc,
     if (_cfg.show_surface) {
         surfaceView = new SurfaceGraph(&tabWidget);
         spectrogram = new Spectrogram(400);
-        if (!surfaceView->initialize(minimumGraphSize, screenSize)) {
+        if (not surfaceView->initialize(minimumGraphSize, screenSize)) {
             qWarning("Couldn't initialize the OpenGL context.");
         }
         tabWidget.addTab(surfaceView, "surface tab");
