@@ -25,7 +25,6 @@ target_sources(analyzer PUBLIC
         ${ANALYZER_HEADERS} ${ANALYZER_SOURCES}
 )
 
-target_include_directories(analyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 target_include_directories(analyzer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 target_link_libraries(analyzer PUBLIC

@@ -150,8 +150,8 @@ uint64_t Analyzer::_task() {
             }
             _need_update = false;
         }
-        auto fft_calc_time_ms = float(timer.elapsed()) / 1000000;
-        auto delta = abs(fps_ms_delay - fft_calc_time_ms);
+        const auto fft_calc_time_ms = static_cast<float>(timer.elapsed()) / 1000000;
+        const auto delta = abs(fps_ms_delay - fft_calc_time_ms);
         if (delta > 0) _sleep(delta);
     }
     return 0;

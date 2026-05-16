@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.16)
 
-
 set(CMAKE_AUTOMOC ON)
 
 set(HEADERS
@@ -45,4 +44,5 @@ target_link_libraries(core_app
         QtNodes
         analyzer
         visualization
+        wled
 )

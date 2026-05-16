@@ -41,6 +41,7 @@ bool ConfigManager::load(FileSaveApplicationConfig &config) const {
     _parse_core_config(json_obj, config);
     _parse_ui_config(json_obj, config);
     _parse_diagram_config(json_obj, config);
+    _parse_wled_ar_server_config(json_obj, config);
 
     qCInfo(core_app_config, "Config loaded successfully from: %s", qPrintable(_config_path));
     return true;
@@ -65,6 +66,7 @@ bool ConfigManager::save(const FileSaveApplicationConfig &config) const {
     _save_aggregator_config(json_obj, config);
     _save_ui_config(json_obj, config);
     _save_scheme_config(json_obj, config);
+    _save_wled_ar_server_config(json_obj, config);
 
     const QJsonDocument json_doc(json_obj);
     config_file.write(json_doc.toJson());
@@ -137,4 +139,22 @@ void ConfigManager::_save_ui_config(QJsonObject &json_obj, const FileSaveApplica
 
 void ConfigManager::_save_scheme_config(QJsonObject &json_obj, const FileSaveApplicationConfig &config) {
     json_obj["scene_graph"] = config.scene_graph;
+}
+
+void ConfigManager::_parse_wled_ar_server_config(const QJsonObject &json_obj, FileSaveApplicationConfig &config) {
+    const WLEDARServerConfig default_;
+
+    if (not json_obj.contains("wled_ar_server")) return;
+    const QJsonObject wled_obj = json_obj["wled_ar_server"].toObject();
+    config.wled_ar_server.enabled = wled_obj.value("enabled").toBool(default_.enabled);
+    config.wled_ar_server.network_interface_name = wled_obj.value("network_interface_name").toString(default_.network_interface_name);
+    config.wled_ar_server.port = static_cast<quint16>(wled_obj.value("port").toInt(wled_audio_reactive::DEFAULT_PORT));
+}
+
+void ConfigManager::_save_wled_ar_server_config(QJsonObject &json_obj, const FileSaveApplicationConfig &config) {
+    QJsonObject wled_obj;
+    wled_obj["enabled"] = config.wled_ar_server.enabled;
+    wled_obj["network_interface_name"] = config.wled_ar_server.network_interface_name;
+    wled_obj["port"] = config.wled_ar_server.port;
+    json_obj["wled_ar_server"] = wled_obj;
 }

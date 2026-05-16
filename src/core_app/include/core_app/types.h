@@ -5,6 +5,7 @@
 #include <QtNodes/NodeDelegateModelRegistry>
 #include <QJsonObject>
 
+#include "wled/wled_audio_reactive_server.h"
 #include "analyzer/analyze/analyzer.h"
 #include "analyzer/analyze/spectrogram.h"
 #include "analyzer/loopback/windows_loopback.h"
@@ -24,6 +25,12 @@ struct UIApplicationConfig {
     bool show_surface = true;
 };
 
+struct WLEDARServerConfig {
+    bool enabled = false;
+    QString network_interface_name{};
+    quint16 port{};
+};
+
 struct FileCoreApplicationConfig {
     bool run_loopback = true;
     bool run_analyser = true;
@@ -32,6 +39,7 @@ struct FileCoreApplicationConfig {
 struct FileSaveApplicationConfig {
     FileCoreApplicationConfig core;
     UIApplicationConfig ui{};
+    WLEDARServerConfig wled_ar_server{};
     QJsonObject scene_graph;
 };
 
@@ -47,6 +55,7 @@ struct CoreApplicationContext {
     Analyzer *analyzer = nullptr;
     Spectrogram *spectrogram = nullptr;
     audio::loopback::WASAPILoopback *loopback = nullptr;
+    WLEDAudioReactiveServer *wled_ar_server = nullptr;
 };
 
 #endif // CORE_APP_TYPES_H

@@ -18,6 +18,9 @@ signals:
     void stop_loopback_requested();
     void start_analyzer_requested();
     void stop_analyzer_requested();
+    void start_wled_server_requested();
+    void stop_wled_server_requested();
+    void wled_server_config_changed();
     void on_config_updated();
 
 private slots:

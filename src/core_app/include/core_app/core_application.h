@@ -31,6 +31,12 @@ public Q_SLOTS:
 
     void stop_loopback() const;
 
+    void start_wled_audio_reactive_server();
+
+    void stop_wled_audio_reactive_server() const;
+
+    void restart_wled_audio_reactive_server() const;
+
 Q_SIGNALS:
     void on_config_updated();
 
@@ -57,6 +63,7 @@ Q_SIGNALS:
     void loopback_started();
 
     void loopback_stopped();
+
 
 private:
     QMainWindow *_main_window = nullptr;

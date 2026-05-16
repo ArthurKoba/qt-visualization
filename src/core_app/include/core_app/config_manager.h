@@ -21,10 +21,12 @@ private:
     static void _parse_core_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
     static void _parse_ui_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
     static void _parse_diagram_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
+    static void _parse_wled_ar_server_config(const QJsonObject& json_obj, FileSaveApplicationConfig& config);
     
     static void _save_aggregator_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
     static void _save_ui_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
     static void _save_scheme_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
+    static void _save_wled_ar_server_config(QJsonObject& json_obj, const FileSaveApplicationConfig& config);
 };
 
 #endif // CORE_APP_CONFIG_MANAGER_H

@@ -116,6 +116,9 @@ void MainWindow::setup_ui() {
     connect(settings_widget, &SettingsWidget::stop_loopback_requested, this, &MainWindow::stop_loopback_requested);
     connect(settings_widget, &SettingsWidget::start_analyzer_requested, this, &MainWindow::start_analyzer_requested);
     connect(settings_widget, &SettingsWidget::stop_analyzer_requested, this, &MainWindow::stop_analyzer_requested);
+    connect(settings_widget, &SettingsWidget::start_wled_server_requested, this, &MainWindow::start_wled_server_requested);
+    connect(settings_widget, &SettingsWidget::stop_wled_server_requested, this, &MainWindow::stop_wled_server_requested);
+    connect(settings_widget, &SettingsWidget::wled_server_config_changed, this, &MainWindow::wled_server_config_changed);
     _tab_widget->addTab(settings_widget, "Settings");
 
     setCentralWidget(_tab_widget);

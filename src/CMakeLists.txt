@@ -17,7 +17,7 @@ add_executable(${APP_NAME} main.cpp app.h app.cpp)
 FetchContent_MakeAvailable(BDSP)
 find_package(BDSP)
 
-set(APP_PROJECT_LIBS core analyzer visualization)
+set(APP_PROJECT_LIBS core analyzer visualization wled)
 
 foreach(lib IN LISTS APP_PROJECT_LIBS)
     add_subdirectory(${lib})

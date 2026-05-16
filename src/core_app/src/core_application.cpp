@@ -4,6 +4,7 @@
 
 #include "core_app/core_application.h"
 
+#include "core/utils.h"
 #include "core_app/main_window.h"
 #include "core_app/scheme_editor/processor_data_model.h"
 #include "core_app/scheme_editor/sink_data_model.h"
@@ -42,6 +43,10 @@ CoreApplication::CoreApplication(int32_t argc, char *argv[]) : QApplication(argc
         start_loopback();
     }
 
+    if (_ctx.file_configs.wled_ar_server.enabled) {
+        start_wled_audio_reactive_server();
+    }
+
     if (not _ctx.configs.enable_ui) return;
     const auto main_window = new MainWindow(*this);
     _main_window = main_window;
@@ -55,11 +60,18 @@ CoreApplication::CoreApplication(int32_t argc, char *argv[]) : QApplication(argc
     connect(main_window, &MainWindow::stop_loopback_requested, this, &CoreApplication::stop_loopback);
     connect(main_window, &MainWindow::start_analyzer_requested, this, &CoreApplication::start_analyzer);
     connect(main_window, &MainWindow::stop_analyzer_requested, this, &CoreApplication::stop_analyzer);
+    connect(main_window, &MainWindow::start_wled_server_requested, this,
+            &CoreApplication::start_wled_audio_reactive_server);
+    connect(main_window, &MainWindow::stop_wled_server_requested, this,
+            &CoreApplication::stop_wled_audio_reactive_server);
+    connect(main_window, &MainWindow::wled_server_config_changed, this,
+            &CoreApplication::restart_wled_audio_reactive_server);
 }
 
 CoreApplication::~CoreApplication() {
     stop_loopback();
     stop_analyzer();
+    stop_wled_audio_reactive_server();
 }
 
 void CoreApplication::_parse_command_line() {
@@ -109,6 +121,10 @@ void CoreApplication::start_analyzer() {
         if (_ctx.spectrogram) {
             _ctx.spectrogram->push(_ctx.analyzer->amplitudes_test.left);
             emit spectrogram_updated(_ctx.spectrogram->get_vector_spectrogram());
+        }
+
+        if (_ctx.wled_ar_server) {
+            _ctx.wled_ar_server->update(_ctx.analyzer->amplitudes_test.left);
         }
     });
     _ctx.analyzer->set_update_window_function_handler([this](const std::vector<float> &window) {
@@ -179,4 +195,31 @@ void CoreApplication::stop_loopback() const {
         _ctx.loopback->stop();
         qCInfo(core_app_main, "Loopback stopped");
     }
+}
+
+void CoreApplication::start_wled_audio_reactive_server() {
+    if (_ctx.wled_ar_server) {
+        qCInfo(core_app_main, "WLED audio server already started");
+        return;
+    }
+    qCInfo(core_app_main, "WLED audio server start");
+    const QHostAddress address = get_network_interface_address(_ctx.file_configs.wled_ar_server.network_interface_name);
+    _ctx.wled_ar_server = new WLEDAudioReactiveServer(address, _ctx.file_configs.wled_ar_server.port);
+    _ctx.wled_ar_server->start();
+}
+
+void CoreApplication::stop_wled_audio_reactive_server() const {
+    if (not _ctx.wled_ar_server) {
+        qCInfo(core_app_main, "WLED audio server already stopped");
+        return;
+    }
+    _ctx.wled_ar_server->stop();
+    delete _ctx.wled_ar_server;
+    qCInfo(core_app_main, "WLED audio server stop");
+}
+
+void CoreApplication::restart_wled_audio_reactive_server() const {
+    qCInfo(core_app_main, "WLED audio server restart");
+    stop_wled_audio_reactive_server();
+    stop_wled_audio_reactive_server();
 }
